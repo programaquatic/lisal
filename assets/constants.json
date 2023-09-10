@@ -1,0 +1,20 @@
+// Global constants definitions
+{
+    "MAX_GRID_CELLS": 50000,
+    "WORLD_DT": 0.04,
+    "DEFAULT_GRAVITY": -9.81,
+
+    "DEFAULT_DENSITY": [4.0, 1.0],
+    "DEFAULT_PARTICLE_MASS": 2.0,
+    "DEFAULT_FILL_HEIGHT": 0.95,
+    "DEFAULT_DAMPENING": 0.9999,
+
+    "MAX_PARTICLES": 1000,
+    "VISIBLE_PARTICLES": 50,
+
+    "DEBUG_FLUID_PARTICLES": {
+        "base": false,
+        "fill": true,
+        "spec": true
+    }
+}

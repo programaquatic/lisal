@@ -1,0 +1,61 @@
+// Tank configuration
+{
+    // Tank dimensions in cm
+    // glass thickness in mm
+    "tank": {
+        "width": 160,
+        "depth": 70,
+        "height": 80,
+        "glass": 12
+    },
+    // definition of any overflow additions to the tank
+    // this can be a list of drilled holes in any of the glass panes
+    // and a path along the bottom to define the shape of a shaft
+    "overflow": {
+        // a list of drilled holes
+        // the location of each hole based on a glass pane in: Right, Left, Bottom, Back, Front
+        // then the x,y coordinates (cm) of the holes center and its diameter
+        // and the diameter of the hole (cm)
+        // the x,y coordinates are based on the corresponding origin of the defined pane
+        // origins per pane:
+        //   Right : bottom, back
+        //   Left  : bottom, back
+        //   Bottom: back  , left
+        //   Back  : bottom, left
+        //   Front : bottom, left
+        "drill": [
+            {
+                "position": "Bottom",
+                "x": 10,
+                "y": 10,
+                "diameter": 6
+            },
+            {
+                "position": "Bottom",
+                "x": 20,
+                "y": 10,
+                "diameter": 6
+            }
+        ],
+
+        // the definition of the shaft is based on a path along the bottom pane, it will be extended from the bottom to the top
+        // consists of a list of 2D coordinates relative to the back-left corner of the bottom
+        "shaft": [
+            [ 0,  15 ],
+            [ 25, 15 ],
+            [ 35, 0 ]
+        ]
+    },
+    "pump": {
+        "inlet": {
+            "location": [ 10.0, 70.0, 57.0 ],
+            "extent": [ 5.0, 5.0, 10.0 ],
+            "direction": { "Parallel": [ 30.0, 1.0, 0.0 ]}
+        },
+        "outlet": {
+            "location": [ 15.0, 10.0, 7.0 ],
+            "extent": [ 10.0, 9.0, 6.0 ],
+            "direction": { "Inward": -1.0 }
+        }
+    }
+}

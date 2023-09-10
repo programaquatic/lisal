@@ -1,0 +1,40 @@
+#  Copyright 2023 github.com/programaquatic
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[package]
+name = "lisal"
+version = "0.1.0"
+authors = ["programaquatic"]
+edition = "2021"
+
+
+# Enable only a small amount of optimization in debug mode
+[profile.dev]
+opt-level = 1
+
+# Enable high optimizations for dependencies (incl. Bevy), but not for our code:
+[profile.dev.package."*"]
+opt-level = 3
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+rand = { version = "0.8.5", features = ["std_rng"] }
+libm = "0.2.7"
+serde = "1.0.188"
+serde_json = "1.0.105"
+itertools = "0.11.0"
+bevy = { version = "0.11.2", features = ["dynamic_linking"] }
+bevy_rapier3d = { version = "0.22.0", features = [ "simd-stable", "parallel" ] }
+bevy-inspector-egui = "0.19.0"
