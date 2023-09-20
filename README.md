@@ -1,3 +1,5 @@
+[![Rust](https://github.com/programaquatic/lisal/actions/workflows/rust.yml/badge.svg?branch=main)](https://github.com/programaquatic/lisal/actions/workflows/rust.yml)
+
 # LISAL: Likely Inaccurate Simulation of Aquarium Life
 
 ## Vision
