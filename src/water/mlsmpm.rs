@@ -173,10 +173,10 @@ pub fn p2g_stage2(
                 Vec3A::new(0.0, 0.0, -pressure),
             );
             let mut strain = affmom.0;
-            let trace = strain.determinant();
+            let trace = strain.z_axis.x + strain.y_axis.y + strain.x_axis.z;
             strain.z_axis.x = trace;
             strain.y_axis.y = trace;
-            strain.y_axis.z = trace;
+            strain.x_axis.z = trace;
             let viscosity_term: Mat3A = strain * constants.FLUID_MODEL.dynamic_viscosity;
             stress += viscosity_term;
 
