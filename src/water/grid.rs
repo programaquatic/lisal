@@ -67,6 +67,9 @@ pub struct GridCellAccumulatedForce(Vec3A);
 #[derive( Component, Debug)]
 pub struct ColliderNormals( Vec<Vec3A> );
 
+/// Stores a vector or fluid neighbors in case of solid/wall cells
+#[derive( Component, Debug)]
+pub struct GridFluidNeighbors( Vec<usize> );
 
 /** The definition of a grid with the total size (including boundaries)
     the cell scaling and the array of cell definitions
@@ -253,6 +256,8 @@ pub fn setup_fluid_grid(
     let ptank = tank_cfg.get_tank_parent();
 
     let mut cells = Vec::<Entity>::with_capacity( grid.cell_count() );
+    let mut temp_type_info = Vec::<(Entity, GridCellType)>::with_capacity( grid.cell_count() );
+
     for idx in 0..grid.cell_count() {
         let xyz = grid.to_3d(idx);
 
@@ -273,13 +278,39 @@ pub fn setup_fluid_grid(
                 visibility: Visibility::default(),
                 ..default()
             })
-            .insert(gct)
+            .insert(gct.clone())
             .insert(FluidParticleVelocity(Vec3A::ZERO))
             .insert(FluidQuantityMass( 0.0 ))
             .insert(GridCellIndex( idx ))
             .insert(ColliderNormals( vec![] ))
             .id();
         cells.push( cell_id );
+        temp_type_info.push( (cell_id, gct) );
+    }
+
+    for idx in 0..grid.cell_count() {
+        let xyz = grid.to_3d(idx);
+        if temp_type_info[ idx ].1 == GridCellType::Solid {
+            let mut neighbors = GridFluidNeighbors( vec![] );
+            for z in 0..3 {
+                for y in 0..3 {
+                    for x in 0..3 {
+                        let tcell_xyz = xyz + UVec3{x, y, z};
+                        if tcell_xyz.x * tcell_xyz.y * tcell_xyz.z != 0 &&
+                            tcell_xyz.x <= grid.grid_dim.x && tcell_xyz.z <= grid.grid_dim.z
+                        {
+                            let ocell_xyz = tcell_xyz - UVec3::splat(1);
+                            let ocidx = grid.index_of_vec(&ocell_xyz);
+                            if temp_type_info[ocidx].1 == GridCellType::Fluid {
+                                neighbors.0.push( ocidx );
+                            }
+                        }
+                    }
+                }
+            }
+            commands.entity( temp_type_info[ idx ].0 )
+                .insert(neighbors);
+        }
     }
 
     commands.entity( ptank ).push_children( &cells );
@@ -358,6 +389,24 @@ pub fn reset_fluid_grid_cells(
 
 }
 
+pub fn wall_to_active_momentum(
+    cells: Query<(&FluidQuantityMass,
+                  &FluidParticleVelocity,
+                  &GridFluidNeighbors,
+    ), With<GridFluidNeighbors>>,
+    mut grid: ResMut<Grid>,
+) {
+    cells.iter().for_each(
+        | (mass, vel, fluid_neighbors) | {
+            let dmass = mass.0/fluid_neighbors.0.len() as f32 * 2.0;
+            let dvel = vel.0/fluid_neighbors.0.len() as f32 * 2.0;
+            for &fcell in &fluid_neighbors.0 {
+                grid.tmp_mass[ fcell ] += dmass;
+                grid.tmp_velo[ fcell ] += dvel;
+            }
+        }
+    )
+}
 
 pub fn update_grid_cells(
     constants: Res<Constants>,

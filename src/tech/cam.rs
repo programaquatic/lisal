@@ -66,13 +66,9 @@ fn initialize(
     // all panning happens within this parent
     let cam_center_parent = commands
         .spawn(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::UVSphere {
-                radius: 0.1,
-                sectors: 6,
-                stacks: 4,
-            })),
+            mesh: meshes.add(Mesh::from(Sphere::new(0.1).mesh().ico(5).unwrap())),
             material: materials.add(StandardMaterial {
-                base_color: Color::rgba(0.7, 0.8, 0.7, 1.0),
+                base_color: Color::linear_rgba(0.7, 0.8, 0.7, 1.0),
                 alpha_mode: AlphaMode::Opaque,
                 ..default()
             }),
@@ -113,7 +109,7 @@ fn move_cam(
     windows: Query<&Window>,
     mut ev_motion: EventReader<MouseMotion>,
     mut ev_scroll: EventReader<MouseWheel>,
-    input_mouse: Res<Input<MouseButton>>,
+    input_mouse: Res<ButtonInput<MouseButton>>,
     mut camera_elements: Query<(&mut Transform, &AquaSimCamElement)>,
 ) {
     let window = windows.single();
@@ -124,20 +120,20 @@ fn move_cam(
     let mut move_orbit = Vec2::ZERO;
     let mut scroll = 0.0;
 
-    for ev in ev_scroll.iter() {
+    for ev in ev_scroll.read() {
         scroll += -ev.y;
     }
     // checking which mode we're in
     if input_mouse.pressed(orbit) {
-        for ev in ev_motion.iter() {
+        for ev in ev_motion.read() {
             move_orbit += ev.delta;
         }
     } else if input_mouse.pressed(pan) {
-        for ev in ev_motion.iter() {
+        for ev in ev_motion.read() {
             move_pan += ev.delta;
         }
     } else {
-        for _ in ev_motion.iter() {}
+        for _ in ev_motion.read() {}
         if scroll == 0.0 {
             return;
         }

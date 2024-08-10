@@ -16,8 +16,10 @@
 
 use bevy::{
     prelude::*,
+    math::prelude::Sphere,
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
 };
+
 
 use bevy_rapier3d::{
     plugin::*,
@@ -41,9 +43,9 @@ fn setup(
     // create a textured background so that any potential reflections and/or water surface vectors become more visible
     let text_hdl = Some(asset_server.load("textures/flower_background.png"));
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Plane::from_size(500.))),
+        mesh: meshes.add(Mesh::from(Plane3d::default().mesh().size(500., 500.))),
         material: materials.add(StandardMaterial {
-            base_color: Color::rgba(0.8, 0.7, 0.1, 1.0),
+            base_color: Color::linear_rgba(0.8, 0.7, 0.1, 1.0),
             base_color_texture: text_hdl.clone(),
             // emissive: (),
             emissive_texture: text_hdl,
@@ -67,17 +69,12 @@ fn setup(
 
     // create a small sphere with a light source
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::UVSphere {
-            sectors: 128,
-            stacks: 64,
-            ..default()
-        })),
+        mesh: meshes.add(Sphere::new(1.0).mesh().ico(5).unwrap()),
+        transform: Transform::from_xyz(30., 150., 0.0),
         material: materials.add(StandardMaterial {
             unlit: true,
             ..default()
         }),
-        transform: Transform::from_xyz(30.0, 150.0, 0.0)
-            .with_scale(Vec3{x: 1., y: 1., z: 1.}),
         ..default()
     })
         .with_children(| children | {

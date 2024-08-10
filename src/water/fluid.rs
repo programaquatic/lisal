@@ -453,7 +453,10 @@ impl Plugin for FluidPlugin {
                     .before(mlsmpm::grid_update))
             .add_systems(Update,
                 mlsmpm::p2g_stage2_solids
-                    .before(mlsmpm::grid_update))
+                         .before(grid::wall_to_active_momentum))
+            .add_systems(Update,
+                         grid::wall_to_active_momentum
+                            .before(mlsmpm::grid_update))
             .add_systems(Update,
                 mlsmpm::grid_update
                     .before(grid::update_grid_cells))
