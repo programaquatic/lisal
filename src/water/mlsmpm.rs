@@ -64,7 +64,7 @@ pub fn p2g_stage1(
         With<resources::ParticleTag>,
         >,
 ) {
-    particles.par_iter_mut().for_each_mut(
+    particles.par_iter_mut().for_each(
         |(location, velocity, mass, affine_momentum, mut cmma)| {
             // assert_eq!(location.0.is_nan(), false);
             let cell_idx = location.0.as_uvec3();
@@ -110,7 +110,7 @@ pub fn p2g_apply_stage1(
     mut grid: ResMut<grid::Grid>,
     particles: Query<(&resources::CellMMAccumulation,), With<resources::ParticleTag>>,
 ) {
-    particles.for_each(|cmma| {
+    particles.iter().for_each(|cmma| {
         for change in cmma.0 .0.iter() {
             grid.get_tmp_mass_mut()[ change.cell_idx ] += change.mass;
             grid.get_tmp_velo_mut()[ change.cell_idx ] += change.momentum;
@@ -132,7 +132,7 @@ pub fn p2g_stage2(
         With<resources::ParticleTag>,
         >,
 ) {
-    flparticles.par_iter_mut().for_each_mut(
+    flparticles.par_iter_mut().for_each(
         |(location, quantity, affmom, mut cmma)| {
             let mut density: f32 = 0.0;
 
@@ -226,7 +226,7 @@ pub fn p2g_stage2_solids(
     if num_particles < 1 {
         return;
     }
-    sdparticles.par_iter_mut().for_each_mut(
+    sdparticles.par_iter_mut().for_each(
         |(location, mass, _, mut mmc)| {
             let mut density: f32 = 0.0;
 
@@ -307,13 +307,13 @@ pub fn grid_update(
         &GridCellIndex
     ), With<GridCellType>>,
 ) {
-    particles.for_each(|cmma| {
+    particles.iter().for_each(|cmma| {
         for change in cmma.0 .0.iter() {
             grid.get_tmp_velo_mut()[ change.cell_idx ] += change.momentum;
         }
     });
 
-    cells.par_iter_mut().for_each_mut(
+    cells.par_iter_mut().for_each(
         | (mut vel, mut mass, idx) | {
             vel.0 = grid.get_tmp_velo()[ idx.0 ];
             mass.0 = grid.get_tmp_mass()[ idx.0 ];

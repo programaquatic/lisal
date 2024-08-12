@@ -327,12 +327,12 @@ pub fn grid_initialize_external_forces(
 ) {
     let gravity = Vec3::Y * constants.DEFAULT_GRAVITY;
     // walk through all cells
-    cells.for_each_mut( | ( cid, pos, gct ) | {
+    cells.iter_mut().for_each( | ( cid, pos, gct ) | {
 
         // determine position-dependent external forces
         let ext_f = if *gct == GridCellType::Fluid {
             let mut acc_force = gravity;
-            ext_forces.for_each( | force_location | {
+            ext_forces.iter().for_each( | force_location | {
                 acc_force += force_location.get_force_for_position( pos.translation )
             });
             acc_force
@@ -354,10 +354,10 @@ pub fn grid_collider_setup(
     let dist_thresh = 0.5;
 
     // walk through all cells
-    cells.for_each_mut( | (mut gct, pos, mut cnorm) | {
+    cells.iter_mut().for_each( | (mut gct, pos, mut cnorm) | {
 
         // and check for all colliders whether the cell touches that collider in any way
-        colliders.for_each(| (cloc, c) | {
+        colliders.iter().for_each(| (cloc, c) | {
             let (_sc, ro, _tr) = (cloc.scale, cloc.rotation, cloc.translation);
             let ccenter = pos.translation;
             if let Some( _pp ) = c.project_point_with_max_dist( cloc.translation, ro,
@@ -378,7 +378,7 @@ pub fn reset_fluid_grid_cells(
     mut grid: ResMut<Grid>,
     mut cells: Query<(&mut FluidQuantityMass, &mut FluidParticleVelocity), With<GridCellType>>
 ) {
-    cells.par_iter_mut().for_each_mut(
+    cells.par_iter_mut().for_each(
         | (mut mass, mut velo) | {
             mass.0 = 0.0;
             velo.0 = Vec3A::ZERO;
@@ -419,7 +419,7 @@ pub fn update_grid_cells(
 ) {
     let _lookahead = 1.0;
 
-    cells.par_iter_mut().for_each_mut(
+    cells.par_iter_mut().for_each(
         | ( mass, mut vel, ext_f, gct, cnorm ) | {
 
             if *gct == GridCellType::Solid {
@@ -486,22 +486,22 @@ pub fn show_grid_cells(
         subdivisions: 5,
     }));
     let grid_center_material_hdl = materials.add(StandardMaterial {
-        base_color: Color::rgba(0.5, 0.1, 0.1, 0.8),
+        base_color: Color::linear_rgba(0.5, 0.1, 0.1, 0.8),
         alpha_mode: AlphaMode::Blend,
         ..default()
     });
     let grid_fluid_material_hdl = materials.add(StandardMaterial {
-        base_color: Color::rgba(0.0, 1.0, 0.0, 1.0),
+        base_color: Color::linear_rgba(0.0, 1.0, 0.0, 1.0),
         alpha_mode: AlphaMode::Opaque,
         ..default()
     });
     let grid_air_material_hdl = materials.add(StandardMaterial {
-        base_color: Color::rgba(0.8, 0.8, 1.0, 0.8),
+        base_color: Color::linear_rgba(0.8, 0.8, 1.0, 0.8),
         alpha_mode: AlphaMode::Blend,
         ..default()
     });
 
-    cells.for_each(
+    cells.iter().for_each(
         | (item, position, cn, gct) | {
             if ! cn.0.is_empty() {
                 // println!("showgrid::loc: {}; cellvec: {}", position.translation, cn.0[0] );
@@ -531,7 +531,7 @@ pub fn debug_grid_cells(
     if !DEBUG_GRID {
         return
     }
-    cells.par_iter_mut().for_each_mut(
+    cells.par_iter_mut().for_each(
         | (vel, cn, mut tf) | {
             if !cn.0.is_empty() {
                 let srcloc = tf.translation - Vec3::from(vel.0);  // USE '-' vel.0 because look_at point rotates towards neg Z!!!!

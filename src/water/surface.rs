@@ -150,7 +150,7 @@ pub fn update_surface(
 
     let mut cell_velo = vec![ Vec3::ZERO; cells.iter().len() ];
     let mut cell_mass = vec![ 0.0; cells.iter().len() ];
-    cells.for_each(
+    cells.iter().for_each(
         | ( _, mass, vel, idx ) | {
             cell_velo[ idx.0 ] = vel.0.into();
             cell_mass[ idx.0 ] = mass.0;

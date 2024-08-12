@@ -46,7 +46,7 @@ pub fn ground(
 
 
     let mt_hdl = materials.add(StandardMaterial {
-        base_color: Color::rgba(0.3, 0.2, 0.0, 1.0),
+        base_color: Color::linear_rgba(0.3, 0.2, 0.0, 1.0),
         // color_texture: Some(asset_server.load("textures/wgenerated.png")),
         alpha_mode: AlphaMode::Opaque,
         reflectance: 1.0,

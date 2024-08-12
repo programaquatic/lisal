@@ -23,7 +23,6 @@ use bevy::{
 
 use bevy_rapier3d::{
     plugin::*,
-    prelude::RapierConfiguration,
     // render::RapierDebugRenderPlugin,
 };
 // use bevy_inspector_egui::WorldInspectorPlugin;
@@ -114,7 +113,7 @@ fn main() {
 
         // old Rapier/Physics experiments
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
-        .insert_resource(RapierConfiguration { gravity: Vec3::ZERO, ..default() })
+        //.insert_resource(RapierConfiguration { gravity: Vec3::ZERO, ..default() })
         // .add_plugin(RapierDebugRenderPlugin::default())
 
         .add_plugins(tech::tank::TankPlugin)

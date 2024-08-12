@@ -6,6 +6,7 @@
 
 use bevy::math::Vec3;
 use bevy::render::mesh::{Indices, Mesh};
+use bevy::render::render_asset::RenderAssetUsages;
 use bevy::render::render_resource::PrimitiveTopology;
 
 
@@ -90,8 +91,8 @@ impl From<ZCone> for Mesh {
             indices.push(left as u32);
         }
 
-        let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
-        mesh.set_indices(Some(Indices::U32(indices)));
+        let mut mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default() );
+        mesh.insert_indices(Indices::U32(indices));
         mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
         mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
         mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
