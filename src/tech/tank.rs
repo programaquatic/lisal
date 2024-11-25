@@ -272,35 +272,35 @@ fn initialize(
     let mut glass_panes = vec![
         GlassPaneDefinition {
             name: Name::new("Right Side Glass"),
-            position: Vec3::new( dim[0], -glass_thick, 0.0 ),
+            position: Vec3::new( dim[0]+glass_thick*0.5, dim[1]*0.5-glass_thick, dim[2]*0.5 ),
             mesh_hdl: side_pane.clone(),
             mat_hdl: glass_material_hdl.clone(),
             ..default()
         },
         GlassPaneDefinition {
             name: Name::new("Left Side Glass"),
-            position: Vec3::new( -glass_thick, -glass_thick, 0.0 ),
+            position: Vec3::new( -glass_thick*0.5, dim[1]*0.5-glass_thick, dim[2]*0.5 ),
             mesh_hdl: side_pane,
             mat_hdl: glass_material_hdl.clone(),
             ..default()
         },
         GlassPaneDefinition {
             name: Name::new("Back Side Glass"),
-            position: Vec3::new( -glass_thick, -glass_thick, -glass_thick ),
+            position: Vec3::new( dim[0]*0.5, dim[1]*0.5-glass_thick, -glass_thick*0.5 ),
             mesh_hdl: front_pane.clone(),
             mat_hdl: glass_material_hdl.clone(),
             ..default()
         },
         GlassPaneDefinition {
             name: Name::new("Front Side Glass"),
-            position: Vec3::new( -glass_thick, -glass_thick, dim[2] ),
+            position: Vec3::new( dim[0]*0.5, dim[1]*0.5-glass_thick, dim[2]+glass_thick*0.5 ),
             mesh_hdl: front_pane,
             mat_hdl: glass_material_hdl.clone(),
             ..default()
         },
         GlassPaneDefinition {
             name: Name::new("Bottom Glass"),
-            position: Vec3::new( 0.0, -glass_thick, 0.0 ),
+            position: Vec3::new( dim[0]*0.5, -glass_thick, dim[2]*0.5 ),
             mesh_hdl: bottom_pane,
             mat_hdl: glass_material_hdl,
             ..default()
@@ -314,14 +314,15 @@ fn initialize(
         // then when inserting, stretch the pane in x-direction to match the config
         let spane_base_mesh = Mesh::from(Cuboid::from_corners(
             Vec3 {
-                x: 1.0,
-                y: dim[1]-(9.0*tank_cfg.scale),
-                z: glass_thick},
-            Vec3 {
                 x: 0.0,
                 y: 0.0,
-                z: 0.0}
+                z: 0.0},
+            Vec3 {
+                x: 1.0,
+                y: dim[1]-(9.0*tank_cfg.scale),
+                z: glass_thick}
         ));
+
         let spane_base = meshes.add( spane_base_mesh );
 
         // zip the shaft-path definitions such that we get a tuple of (i+1, i), i.e. the endpoint and the current point
@@ -329,7 +330,9 @@ fn initialize(
             let (xd, zd) = ( b.x - a.x, b.y - a.y );
 
             let plen = f32::sqrt( xd*xd + zd*zd );
-            let rpos = Vec3::ZERO;
+            let rpos = Vec3{ x: 0.0,
+                             y: (dim[1]-(9.0*tank_cfg.scale)-glass_thick)*0.5,
+                             z: 0.0 };
 
             let xangle = get_angle( xd, zd);
             println!("{},{}", plen, xangle);
@@ -337,7 +340,7 @@ fn initialize(
                 name: Name::new(i.to_string() + "Shaft-Pane"),
                 mesh_hdl: spane_base.clone(),
                 mat_hdl: black_glass_material_hdl.clone(),
-                position: Vec3::new( rpos.x+a.x, rpos.y, rpos.z+a.y ),
+                position: Vec3::new( (rpos.x+(a.x+b.x)*0.5), rpos.y, rpos.z+(a.y+b.y)*0.5 ),
                 scale: Vec3::from( (plen, 1.0, 1.0) ),
                 rotation: Quat::from_axis_angle( Vec3::from ( (0.0, -1.0, 0.0) ), xangle),
                 is_decoration: true,

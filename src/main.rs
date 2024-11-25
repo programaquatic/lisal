@@ -17,15 +17,17 @@
 use bevy::{
     prelude::*,
     math::prelude::Sphere,
+    pbr::CascadeShadowConfigBuilder,
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
 };
 
-
 use bevy_rapier3d::{
     plugin::*,
-    // render::RapierDebugRenderPlugin,
+    render::RapierDebugRenderPlugin,
 };
 // use bevy_inspector_egui::WorldInspectorPlugin;
+
+use std::f32::consts::PI;
 
 mod aqs_utils;
 mod tech;
@@ -66,37 +68,29 @@ fn setup(
             .with_rotation( Quat::from_rotation_x( std::f32::consts::PI / 2.) ),
         ..default()});
 
-    // create a small sphere with a light source
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Sphere::new(1.0).mesh().ico(5).unwrap()),
-        transform: Transform::from_xyz(30., 150., 0.0),
-        material: materials.add(StandardMaterial {
-            unlit: true,
-            ..default()
-        }),
-        ..default()
-    })
-        .with_children(| children | {
-            children.spawn(PointLightBundle {
-                point_light: PointLight {
-                    intensity: 600000.,
-                    radius: 20.,
-                    range: 1000.,
-                    ..default()
-                },
-                ..default()
-            });
-        });
 
-    // // light
-    // commands.spawn(PointLightBundle {
-    //     point_light: PointLight {
-    //         intensity: 600000.,
-    //         range: 1000.,
-    //         ..default()
-    //     },
-    //     ..default()
-    // });
+    commands.spawn(DirectionalLightBundle {
+        directional_light: DirectionalLight {
+            illuminance: light_consts::lux::OVERCAST_DAY,
+            shadows_enabled: true,
+            ..default()
+        },
+        transform: Transform {
+            translation: Vec3::new(60., 150.0, 20.0),
+            rotation: Quat::from_rotation_x(-PI / 3.),
+            ..default()
+        },
+        // The default cascade config is designed to handle large scenes.
+        // As this example has a much smaller world, we can tighten the shadow
+        // bounds for better visual quality.
+        cascade_shadow_config: CascadeShadowConfigBuilder {
+            first_cascade_far_bound: 4.0,
+            maximum_distance: 10.0,
+            ..default()
+        }
+        .into(),
+        ..default()
+    });
 }
 
 
@@ -114,7 +108,7 @@ fn main() {
         // old Rapier/Physics experiments
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         //.insert_resource(RapierConfiguration { gravity: Vec3::ZERO, ..default() })
-        // .add_plugin(RapierDebugRenderPlugin::default())
+        // .add_plugins(RapierDebugRenderPlugin::default())
 
         .add_plugins(tech::tank::TankPlugin)
         .add_plugins(tech::cam::AquaSimCamPlugin)
