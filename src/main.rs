@@ -16,15 +16,18 @@
 
 use bevy::{
     prelude::*,
+    math::prelude::Sphere,
+    pbr::CascadeShadowConfigBuilder,
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
 };
 
 use bevy_rapier3d::{
     plugin::*,
-    prelude::RapierConfiguration,
-    // render::RapierDebugRenderPlugin,
+    render::RapierDebugRenderPlugin,
 };
 // use bevy_inspector_egui::WorldInspectorPlugin;
+
+use std::f32::consts::PI;
 
 mod aqs_utils;
 mod tech;
@@ -41,9 +44,9 @@ fn setup(
     // create a textured background so that any potential reflections and/or water surface vectors become more visible
     let text_hdl = Some(asset_server.load("textures/flower_background.png"));
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Plane::from_size(500.))),
+        mesh: meshes.add(Mesh::from(Plane3d::default().mesh().size(500., 500.))),
         material: materials.add(StandardMaterial {
-            base_color: Color::rgba(0.8, 0.7, 0.1, 1.0),
+            base_color: Color::linear_rgba(0.8, 0.7, 0.1, 1.0),
             base_color_texture: text_hdl.clone(),
             // emissive: (),
             emissive_texture: text_hdl,
@@ -65,42 +68,29 @@ fn setup(
             .with_rotation( Quat::from_rotation_x( std::f32::consts::PI / 2.) ),
         ..default()});
 
-    // create a small sphere with a light source
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::UVSphere {
-            sectors: 128,
-            stacks: 64,
-            ..default()
-        })),
-        material: materials.add(StandardMaterial {
-            unlit: true,
-            ..default()
-        }),
-        transform: Transform::from_xyz(30.0, 150.0, 0.0)
-            .with_scale(Vec3{x: 1., y: 1., z: 1.}),
-        ..default()
-    })
-        .with_children(| children | {
-            children.spawn(PointLightBundle {
-                point_light: PointLight {
-                    intensity: 600000.,
-                    radius: 20.,
-                    range: 1000.,
-                    ..default()
-                },
-                ..default()
-            });
-        });
 
-    // // light
-    // commands.spawn(PointLightBundle {
-    //     point_light: PointLight {
-    //         intensity: 600000.,
-    //         range: 1000.,
-    //         ..default()
-    //     },
-    //     ..default()
-    // });
+    commands.spawn(DirectionalLightBundle {
+        directional_light: DirectionalLight {
+            illuminance: light_consts::lux::OVERCAST_DAY,
+            shadows_enabled: true,
+            ..default()
+        },
+        transform: Transform {
+            translation: Vec3::new(60., 150.0, 20.0),
+            rotation: Quat::from_rotation_x(-PI / 3.),
+            ..default()
+        },
+        // The default cascade config is designed to handle large scenes.
+        // As this example has a much smaller world, we can tighten the shadow
+        // bounds for better visual quality.
+        cascade_shadow_config: CascadeShadowConfigBuilder {
+            first_cascade_far_bound: 4.0,
+            maximum_distance: 10.0,
+            ..default()
+        }
+        .into(),
+        ..default()
+    });
 }
 
 
@@ -117,8 +107,8 @@ fn main() {
 
         // old Rapier/Physics experiments
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
-        .insert_resource(RapierConfiguration { gravity: Vec3::ZERO, ..default() })
-        // .add_plugin(RapierDebugRenderPlugin::default())
+        //.insert_resource(RapierConfiguration { gravity: Vec3::ZERO, ..default() })
+        // .add_plugins(RapierDebugRenderPlugin::default())
 
         .add_plugins(tech::tank::TankPlugin)
         .add_plugins(tech::cam::AquaSimCamPlugin)

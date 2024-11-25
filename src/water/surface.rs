@@ -20,7 +20,7 @@ use bevy::{
         render_resource::AsBindGroup,
         mesh::VertexAttributeValues,
     },
-    reflect::{TypeUuid, TypePath},
+    reflect::TypePath,
 };
 
 use crate::{
@@ -57,11 +57,10 @@ impl Material for CustomMaterial {
 }
 
 // This is the struct that will be passed to your shader
-#[derive(AsBindGroup, TypeUuid, Debug, Clone, TypePath)]
-#[uuid = "f690fdae-d598-45ab-8225-97e2a3f056c0"]
+#[derive(AsBindGroup, TypePath, Debug, Clone, Asset)]
 pub struct CustomMaterial {
     #[uniform(0)]
-    color: Color,
+    color: LinearRgba,
     #[texture(2)]
     #[sampler(3)]
     color_texture: Option<Handle<Image>>,
@@ -151,14 +150,14 @@ pub fn update_surface(
 
     let mut cell_velo = vec![ Vec3::ZERO; cells.iter().len() ];
     let mut cell_mass = vec![ 0.0; cells.iter().len() ];
-    cells.for_each(
+    cells.iter().for_each(
         | ( _, mass, vel, idx ) | {
             cell_velo[ idx.0 ] = vel.0.into();
             cell_mass[ idx.0 ] = mass.0;
         }
     );
     
-    surface_frames.for_each_mut( | mut transform | {
+    surface_frames.par_iter_mut().for_each( | mut transform | {
         transform.translation.y = grid.to_world_coord( Vec3::splat(grid.get_surface_level()) ).y;
     });
     // technically, we should only have one mesh that matches the query

@@ -67,6 +67,9 @@ pub struct GridCellAccumulatedForce(Vec3A);
 #[derive( Component, Debug)]
 pub struct ColliderNormals( Vec<Vec3A> );
 
+/// Stores a vector or fluid neighbors in case of solid/wall cells
+#[derive( Component, Debug)]
+pub struct GridFluidNeighbors( Vec<usize> );
 
 /** The definition of a grid with the total size (including boundaries)
     the cell scaling and the array of cell definitions
@@ -253,6 +256,8 @@ pub fn setup_fluid_grid(
     let ptank = tank_cfg.get_tank_parent();
 
     let mut cells = Vec::<Entity>::with_capacity( grid.cell_count() );
+    let mut temp_type_info = Vec::<(Entity, GridCellType)>::with_capacity( grid.cell_count() );
+
     for idx in 0..grid.cell_count() {
         let xyz = grid.to_3d(idx);
 
@@ -273,13 +278,39 @@ pub fn setup_fluid_grid(
                 visibility: Visibility::default(),
                 ..default()
             })
-            .insert(gct)
+            .insert(gct.clone())
             .insert(FluidParticleVelocity(Vec3A::ZERO))
             .insert(FluidQuantityMass( 0.0 ))
             .insert(GridCellIndex( idx ))
             .insert(ColliderNormals( vec![] ))
             .id();
         cells.push( cell_id );
+        temp_type_info.push( (cell_id, gct) );
+    }
+
+    for idx in 0..grid.cell_count() {
+        let xyz = grid.to_3d(idx);
+        if temp_type_info[ idx ].1 == GridCellType::Solid {
+            let mut neighbors = GridFluidNeighbors( vec![] );
+            for z in 0..3 {
+                for y in 0..3 {
+                    for x in 0..3 {
+                        let tcell_xyz = xyz + UVec3{x, y, z};
+                        if tcell_xyz.x * tcell_xyz.y * tcell_xyz.z != 0 &&
+                            tcell_xyz.x <= grid.grid_dim.x && tcell_xyz.z <= grid.grid_dim.z
+                        {
+                            let ocell_xyz = tcell_xyz - UVec3::splat(1);
+                            let ocidx = grid.index_of_vec(&ocell_xyz);
+                            if temp_type_info[ocidx].1 == GridCellType::Fluid {
+                                neighbors.0.push( ocidx );
+                            }
+                        }
+                    }
+                }
+            }
+            commands.entity( temp_type_info[ idx ].0 )
+                .insert(neighbors);
+        }
     }
 
     commands.entity( ptank ).push_children( &cells );
@@ -296,12 +327,12 @@ pub fn grid_initialize_external_forces(
 ) {
     let gravity = Vec3::Y * constants.DEFAULT_GRAVITY;
     // walk through all cells
-    cells.for_each_mut( | ( cid, pos, gct ) | {
+    cells.iter_mut().for_each( | ( cid, pos, gct ) | {
 
         // determine position-dependent external forces
         let ext_f = if *gct == GridCellType::Fluid {
             let mut acc_force = gravity;
-            ext_forces.for_each( | force_location | {
+            ext_forces.iter().for_each( | force_location | {
                 acc_force += force_location.get_force_for_position( pos.translation )
             });
             acc_force
@@ -323,10 +354,10 @@ pub fn grid_collider_setup(
     let dist_thresh = 0.5;
 
     // walk through all cells
-    cells.for_each_mut( | (mut gct, pos, mut cnorm) | {
+    cells.iter_mut().for_each( | (mut gct, pos, mut cnorm) | {
 
         // and check for all colliders whether the cell touches that collider in any way
-        colliders.for_each(| (cloc, c) | {
+        colliders.iter().for_each(| (cloc, c) | {
             let (_sc, ro, _tr) = (cloc.scale, cloc.rotation, cloc.translation);
             let ccenter = pos.translation;
             if let Some( _pp ) = c.project_point_with_max_dist( cloc.translation, ro,
@@ -347,7 +378,7 @@ pub fn reset_fluid_grid_cells(
     mut grid: ResMut<Grid>,
     mut cells: Query<(&mut FluidQuantityMass, &mut FluidParticleVelocity), With<GridCellType>>
 ) {
-    cells.par_iter_mut().for_each_mut(
+    cells.par_iter_mut().for_each(
         | (mut mass, mut velo) | {
             mass.0 = 0.0;
             velo.0 = Vec3A::ZERO;
@@ -358,6 +389,24 @@ pub fn reset_fluid_grid_cells(
 
 }
 
+pub fn wall_to_active_momentum(
+    cells: Query<(&FluidQuantityMass,
+                  &FluidParticleVelocity,
+                  &GridFluidNeighbors,
+    ), With<GridFluidNeighbors>>,
+    mut grid: ResMut<Grid>,
+) {
+    cells.iter().for_each(
+        | (mass, vel, fluid_neighbors) | {
+            let dmass = mass.0/fluid_neighbors.0.len() as f32 * 2.0;
+            let dvel = vel.0/fluid_neighbors.0.len() as f32 * 2.0;
+            for &fcell in &fluid_neighbors.0 {
+                grid.tmp_mass[ fcell ] += dmass;
+                grid.tmp_velo[ fcell ] += dvel;
+            }
+        }
+    )
+}
 
 pub fn update_grid_cells(
     constants: Res<Constants>,
@@ -370,7 +419,7 @@ pub fn update_grid_cells(
 ) {
     let _lookahead = 1.0;
 
-    cells.par_iter_mut().for_each_mut(
+    cells.par_iter_mut().for_each(
         | ( mass, mut vel, ext_f, gct, cnorm ) | {
 
             if *gct == GridCellType::Solid {
@@ -437,22 +486,22 @@ pub fn show_grid_cells(
         subdivisions: 5,
     }));
     let grid_center_material_hdl = materials.add(StandardMaterial {
-        base_color: Color::rgba(0.5, 0.1, 0.1, 0.8),
+        base_color: Color::linear_rgba(0.5, 0.1, 0.1, 0.8),
         alpha_mode: AlphaMode::Blend,
         ..default()
     });
     let grid_fluid_material_hdl = materials.add(StandardMaterial {
-        base_color: Color::rgba(0.0, 1.0, 0.0, 1.0),
+        base_color: Color::linear_rgba(0.0, 1.0, 0.0, 1.0),
         alpha_mode: AlphaMode::Opaque,
         ..default()
     });
     let grid_air_material_hdl = materials.add(StandardMaterial {
-        base_color: Color::rgba(0.8, 0.8, 1.0, 0.8),
+        base_color: Color::linear_rgba(0.8, 0.8, 1.0, 0.8),
         alpha_mode: AlphaMode::Blend,
         ..default()
     });
 
-    cells.for_each(
+    cells.iter().for_each(
         | (item, position, cn, gct) | {
             if ! cn.0.is_empty() {
                 // println!("showgrid::loc: {}; cellvec: {}", position.translation, cn.0[0] );
@@ -482,7 +531,7 @@ pub fn debug_grid_cells(
     if !DEBUG_GRID {
         return
     }
-    cells.par_iter_mut().for_each_mut(
+    cells.par_iter_mut().for_each(
         | (vel, cn, mut tf) | {
             if !cn.0.is_empty() {
                 let srcloc = tf.translation - Vec3::from(vel.0);  // USE '-' vel.0 because look_at point rotates towards neg Z!!!!

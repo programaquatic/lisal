@@ -91,7 +91,7 @@ fn fill_tank(
         }
         let red = if count.0 % (constants.MAX_PARTICLES / constants.VISIBLE_PARTICLES) == 0 { 1.0 } else { 0.0 };
         let water_material = materials.add(StandardMaterial {
-            base_color: Color::rgba(red, 0.03, 1.0, 0.8),
+            base_color: Color::linear_rgba(red, 0.03, 1.0, 0.8),
             // alpha_mode: AlphaMode::Blend,
             ..default()
         });
@@ -103,11 +103,7 @@ fn fill_tank(
             visible = constants.DEBUG_FLUID_PARTICLES.spec;
             commands// only make one visible particle
                 .spawn(PbrBundle {
-                    mesh: meshes.add(Mesh::from(shape::UVSphere {
-                        radius: particle_radius + (particle_radius * red),
-                        sectors: 4,
-                        stacks: 4,
-                    })),
+                    mesh: meshes.add(Sphere::new(particle_radius + (particle_radius * red)).mesh().ico(4).unwrap()),
                     material: water_material.clone(),
                     transform: Transform::from_translation( wiggle ),
                     ..default()
@@ -164,11 +160,7 @@ fn fill_tank(
         // visualize every added particle (if configured)
         if visible {
             commands.entity( particle )
-                .insert(meshes.add(Mesh::from(shape::UVSphere {
-                    radius: particle_radius,
-                    sectors: 8,
-                    stacks: 8,
-                })))
+                .insert(meshes.add(Sphere::new(particle_radius).mesh().ico(8).unwrap()))
                 .insert(water_material.clone());
         }
         count.0 += 1;
@@ -191,14 +183,14 @@ fn init_fluid_particle_system(
 
     for (c, m) in  water_material.iter_mut().enumerate() {
         *m = materials.add(StandardMaterial {
-            base_color: Color::rgba(0.0, 0.0, 1.0/(c as f32), 0.5),
+            base_color: Color::linear_rgba(0.0, 0.0, 1.0/(c as f32), 0.5),
             // alpha_mode: AlphaMode::Blend,
             ..default()
         });
     }
 
     let water_material_hdl = materials.add(StandardMaterial {
-        base_color: Color::rgba(1.0, 0.0, 0.0, 1.0),
+        base_color: Color::linear_rgba(1.0, 0.0, 0.0, 1.0),
         reflectance: 0.0,
         ..default()
     });
@@ -221,7 +213,7 @@ fn init_fluid_particle_system(
     let _particle_radius = WPARTICLE_RADIUS / grid.get_scale();
     let fill_height = constants.DEFAULT_FILL_HEIGHT * grid.grid_size().y as f32;
 
-    cells.for_each(
+    cells.iter().for_each(
         | ( position, gct, cidx ) | if *gct == grid::GridCellType::Fluid {
             // grid::GridCellType::Fluid => {
             // println!("Cell_idx: {}", idx);
@@ -263,11 +255,7 @@ fn init_fluid_particle_system(
                 if constants.DEBUG_FLUID_PARTICLES.base {
                     commands.entity(particle)
                     //// Uncomment if you want to see all particles
-                        .insert(meshes.add(Mesh::from(shape::UVSphere {
-                            radius: _particle_radius,
-                            sectors: 4,
-                            stacks: 4,
-                        })))
+                        .insert(meshes.add(Sphere::new(_particle_radius).mesh().ico(4).unwrap()))
                         .insert(water_material_hdl.clone());
                 }
             }
@@ -290,11 +278,11 @@ pub fn grid_to_particle(
     cells: Query<(&GridCellIndex,  &resources::FluidParticleVelocity), With<GridCellType>>,
 ) {
     // let mut max_vel: f32 = 0.0;
-    cells.for_each( | (idx, vel) | {
+    cells.iter().for_each( | (idx, vel) | {
         grid.get_tmp_velo_mut()[ idx.0 ] = vel.0;
     });
 
-    particles.par_iter_mut().for_each_mut(
+    particles.par_iter_mut().for_each(
         |(mut location, mut velocity, mut affine_momentum, _ptag)| {
             //// reset particle velocity. we calculate it from scratch each step using the grid
             velocity.0 = Vec3A::ZERO;
@@ -351,9 +339,9 @@ pub fn particle_boundary_enforcement(
     let wall_max: Vec3A = *grid.wall_vector()
         - Vec3A::splat(wall_min);
 
-    particles.par_iter_mut().for_each_mut(
+    particles.par_iter_mut().for_each(
         | (mut location, mut velocity, mut afmom) | {
-            pumping.for_each(| r | {
+            pumping.iter().for_each(| r | {
                 if let Some( ( new_loc, vel_diff) ) = r.particle_pump(location.0) {
                     location.0 = new_loc;
                     velocity.0 = vel_diff;
@@ -398,7 +386,7 @@ pub fn _collider_update(
                             &mut resources::FluidParticleVelocity ), With<ColliderExperiment>>
 ) {
     // println!("Observed Particles: {}", particles.iter().len());
-    particles.par_iter_mut().for_each_mut(
+    particles.par_iter_mut().for_each(
         |(position, mut _part_location, mut velocity)| {
             if let Some( (_collision_with, ray_x) ) =
                 r3d_context.cast_ray_and_get_normal(position.translation(),
@@ -418,7 +406,7 @@ pub fn _collider_update(
 pub fn particle_world_update(
     mut particles: Query<(&resources::FluidParticlePosition, &mut Transform)>,
 ) {
-    particles.par_iter_mut().for_each_mut( |(location, mut transform)| {
+    particles.par_iter_mut().for_each( |(location, mut transform)| {
         transform.translation = location.0.into();
     });
 }
@@ -453,7 +441,10 @@ impl Plugin for FluidPlugin {
                     .before(mlsmpm::grid_update))
             .add_systems(Update,
                 mlsmpm::p2g_stage2_solids
-                    .before(mlsmpm::grid_update))
+                         .before(grid::wall_to_active_momentum))
+            .add_systems(Update,
+                         grid::wall_to_active_momentum
+                            .before(mlsmpm::grid_update))
             .add_systems(Update,
                 mlsmpm::grid_update
                     .before(grid::update_grid_cells))

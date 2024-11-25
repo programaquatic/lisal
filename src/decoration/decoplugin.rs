@@ -14,7 +14,10 @@
    limitations under the License.
 */
 
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    math::prelude::Sphere
+};
 use bevy_rapier3d::prelude::*;
 
 use crate::{
@@ -46,17 +49,13 @@ fn initialize(
     mut commands: Commands,
 ) {
     let decoration_material_hdl = materials.add(StandardMaterial {
-        base_color: Color::rgba(0.7, 0.8, 0.7, 1.0),
+        base_color: Color::linear_rgba(0.7, 0.8, 0.7, 1.0),
         alpha_mode: AlphaMode::Opaque,
         ..default()
     });
 
     // experimental 'rock'-sphere to see how the flow goes around the obstacle
-    let rock_mesh = Mesh::from(shape::UVSphere {
-        radius: 15. * tank_cfg.scale,
-        sectors: 32,
-        stacks: 16,
-    });
+    let rock_mesh = Sphere::new(15.0 * tank_cfg.scale).mesh().ico(16).unwrap();
     let collider = Collider::from_bevy_mesh( &rock_mesh, &ComputedColliderShape::TriMesh ).unwrap();
     let rock = commands.spawn(PbrBundle {
         mesh: meshes.add(rock_mesh),
@@ -80,9 +79,7 @@ fn remove_colliders(
     mut commands: Commands,
     colliders: Query<(Entity, &Collider), With<DecorationTag>>,
 ) {
-    colliders.for_each( | (item, _) | {
+    colliders.iter().for_each( | (item, _) | {
         commands.entity( item ).remove::<Collider>();
     })
 }
-
-

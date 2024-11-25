@@ -17,8 +17,7 @@
 use bevy::{
     prelude::*,
     render::{
-        mesh::Indices,
-        render_resource::PrimitiveTopology,
+        mesh::Indices, render_asset::RenderAssetUsages, render_resource::PrimitiveTopology
     },
 };
 use rand::Rng;
@@ -140,8 +139,8 @@ impl MeshOfSquares {
 
     #[allow(dead_code)]
     pub fn into_mesh(self) -> Mesh {
-        let mut mesh = Mesh::new(PrimitiveTopology::TriangleStrip);
-        mesh.set_indices(Some(Indices::U16(self.indices)));
+        let mut mesh = Mesh::new(PrimitiveTopology::TriangleStrip, RenderAssetUsages::default());
+        mesh.insert_indices(Indices::U16(self.indices));
         mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, self.normals);
         mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, self.locations);
         mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, self.uvs);

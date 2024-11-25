@@ -14,7 +14,14 @@
    limitations under the License.
 */
 
-use bevy::{prelude::*, math::Vec3A};
+use bevy::{
+    prelude::*,
+    math:: {
+        Vec3A,
+        prelude::Sphere
+    }
+};
+
 
 use crate::{
     aqs_utils::extforcevol::ExternalForceVolume,
@@ -87,7 +94,7 @@ pub fn initialize(
     );
 
     let water_material = materials.add(StandardMaterial {
-        base_color: Color::rgba(0.5, 0.5, 0.5, 0.1),
+        base_color: Color::linear_rgba(0.5, 0.5, 0.5, 0.1),
         alpha_mode: AlphaMode::Blend,
         ..default()
     });
@@ -113,11 +120,7 @@ pub fn initialize(
     let outlet = commands
         .spawn( tank_cfg.pump.outlet.clone() )
         .insert(PbrBundle{
-            mesh: meshes.add(Mesh::from(shape::UVSphere {
-                radius: 1.0,
-                sectors: 8,
-                stacks: 8,
-            })),
+            mesh: meshes.add(Sphere::new(1.0).mesh().ico(8).unwrap()),
             material: water_material,
             transform: Transform::from_translation( tank_cfg.pump.outlet.location )
                 .with_scale( tank_cfg.pump.outlet.extent * EFFECTIVE_RADIUS ),
