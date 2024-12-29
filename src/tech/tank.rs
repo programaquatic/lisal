@@ -107,12 +107,11 @@ impl FromWorld for Tank {
         // this is the meshless parent entity for the tank to allow for a global offset,
         // it's a SpatialBundle to assure Transform- and Visibility Propagation
         // which require Visibility, ComputedVisibility, Transform and GlobalTransform to be set up
-        let ptank = _world.spawn(SpatialBundle {
+        let ptank = _world.spawn((
             // transform: Transform::from_translation(-tank_cfg.get_center()),
-            transform: Transform::from_translation(Vec3::ZERO),
-            visibility: Visibility::default(),
-            ..Default::default()
-        })
+            Transform::from_translation(Vec3::ZERO),
+            Visibility::default(),
+        ))
             .insert(Name::new("Core-Tank-box"))
             .insert(ParentTankTag)
             .id();
@@ -242,12 +241,15 @@ fn initialize(
     let glass_thick = tank_cfg.tank.glass / 10.0;
 
     // temp extra plane as artificial bottom (for now)
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(Plane3d::default().mesh().size( 200.0, 200.0 ))),
-        material: materials.add(Color::linear_rgb(0.3, 0.3, 0.3)),
-        transform: Transform::from_xyz( 0.0, -dim_center[1]-glass_thick, 0.0),
-        ..default()
-    });
+    commands.spawn((
+        Mesh3d(meshes.add(Plane3d::default().mesh().size( 200.0, 200.0 ))),
+                   MeshMaterial3d(materials.add(StandardMaterial {
+                       base_color: Color::linear_rgb(0.3, 0.3, 0.3),
+                       alpha_mode: AlphaMode::Opaque,
+                       ..default()
+                   })),
+        Transform::from_xyz( 0.0, -dim_center[1]-glass_thick, 0.0))
+    );
 
     // pre-define the glas panes as mesh and handles for re-use in Rapier colliders
     // pre-define side panes
@@ -340,7 +342,7 @@ fn initialize(
                 name: Name::new(i.to_string() + "Shaft-Pane"),
                 mesh_hdl: spane_base.clone(),
                 mat_hdl: black_glass_material_hdl.clone(),
-                position: Vec3::new( (rpos.x+(a.x+b.x)*0.5), rpos.y, rpos.z+(a.y+b.y)*0.5 ),
+                position: Vec3::new( rpos.x+(a.x+b.x)*0.5, rpos.y, rpos.z+(a.y+b.y)*0.5 ),
                 scale: Vec3::from( (plen, 1.0, 1.0) ),
                 rotation: Quat::from_axis_angle( Vec3::from ( (0.0, -1.0, 0.0) ), xangle),
                 is_decoration: true,
@@ -357,7 +359,7 @@ fn initialize(
     for glass in glass_panes.into_iter() {
         let glass_mesh = meshes.get( &glass.mesh_hdl ).unwrap();
         let collider = {
-            let mut tc = Collider::from_bevy_mesh( glass_mesh, &ComputedColliderShape::TriMesh ).unwrap();
+            let mut tc = Collider::from_bevy_mesh( glass_mesh, &ComputedColliderShape::TriMesh(TriMeshFlags::all()) ).unwrap();
             // This scale+promote_shape is necessary because bevy_rapier appears to not correctly scale the
             // parts of the collider that are used when calculating intersections
             tc.set_scale( glass.scale, 2);
@@ -366,14 +368,14 @@ fn initialize(
         };
 
         let pane = commands
-            .spawn(PbrBundle {
-                mesh: glass.mesh_hdl.clone(),
-                material: glass.mat_hdl.clone(),
-                transform: Transform::from_translation( glass.position )
+            .spawn((
+                Mesh3d(glass.mesh_hdl.clone()),
+                MeshMaterial3d(glass.mat_hdl.clone()),
+                Transform::from_translation( glass.position )
                     .with_scale( glass.scale )
                     .with_rotation( glass.rotation ),
-                ..default()
-            }).insert(glass.name.clone())
+                glass.name.clone()
+            ))
             .id();
         if glass.is_decoration {
             commands
@@ -386,7 +388,7 @@ fn initialize(
         panes_list.push( pane );
         println!("Glass: {} -> id{}", glass.name, pane.index() );
     }
-    commands.entity(ptank).push_children(&panes_list);
+    commands.entity(ptank).add_children(&panes_list);
 }
 
 fn get_angle( xd: f32, yd: f32 ) -> f32 {

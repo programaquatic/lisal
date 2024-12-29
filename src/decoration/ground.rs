@@ -56,16 +56,15 @@ pub fn ground(
         ..default()
     });
 
-    let collider = Collider::from_bevy_mesh( &ground_mesh, &ComputedColliderShape::TriMesh ).unwrap();
+    let collider = Collider::from_bevy_mesh( &ground_mesh, &ComputedColliderShape::TriMesh(TriMeshFlags::all()) ).unwrap();
     let _ground_surface = commands
-        .spawn(MaterialMeshBundle {
-            mesh: gmesh_hdl,
-            material: mt_hdl,
-            transform: Transform::from_translation(Vec3::Y * 2.0)
+        .spawn((
+            Mesh3d(gmesh_hdl),
+            MeshMaterial3d(mt_hdl),
+            Transform::from_translation(Vec3::Y * 2.0)
                 .with_scale(sscale),
-            visibility: Visibility::default(),
-            ..default()
-        })
+            Visibility::default(),
+        ))
         .insert( collider )
         .insert( RigidBody::Fixed )
         .insert( DecorationTag )

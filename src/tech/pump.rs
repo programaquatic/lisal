@@ -119,15 +119,14 @@ pub fn initialize(
         .id();
     let outlet = commands
         .spawn( tank_cfg.pump.outlet.clone() )
-        .insert(PbrBundle{
-            mesh: meshes.add(Sphere::new(1.0).mesh().ico(8).unwrap()),
-            material: water_material,
-            transform: Transform::from_translation( tank_cfg.pump.outlet.location )
+        .insert((
+            Mesh3d(meshes.add(Sphere::new(1.0).mesh().ico(8).unwrap())),
+            MeshMaterial3d(water_material),
+            Transform::from_translation( tank_cfg.pump.outlet.location )
                 .with_scale( tank_cfg.pump.outlet.extent * EFFECTIVE_RADIUS ),
-            ..default()
-        })
+        ))
         .id();
 
-    commands.entity(tank_cfg.get_tank_parent()).push_children(&[pump, inlet, outlet]);
+    commands.entity(tank_cfg.get_tank_parent()).add_children(&[pump, inlet, outlet]);
     println!("pump outlet location: {}", tank_cfg.pump.outlet.location );
 }

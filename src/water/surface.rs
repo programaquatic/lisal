@@ -78,14 +78,13 @@ pub fn init_water_surface_system(
 
     // create a non-visible parent frame for offsetting and proper scaling of the surface
     let wavegrid_frame = commands
-        .spawn(SpatialBundle {
-            transform: Transform::from_translation( -offset )
+        .spawn((
+            Name::new("Particle_Frame"),
+            WaveGridFrameTag,
+            Transform::from_translation( -offset )
                 .with_scale( tank_cfg.get_size() / (grid.grid_size().as_vec3()*2.-3.) ),
-            visibility: Visibility::default(),
-            ..Default::default()
-        })
-        .insert(Name::new("Particle_Frame"))
-        .insert(WaveGridFrameTag)
+            Visibility::default(),
+        ))
         .id();
 
     let sgrid_size = UVec2{x: grid.grid_size().x, y: grid.grid_size().z} * 2 - 2;
@@ -107,15 +106,14 @@ pub fn init_water_surface_system(
     });
 
     let surface_plane = commands
-        .spawn(MaterialMeshBundle {
-            mesh: smesh_hdl.clone(),
-            material: mt_hdl,
-            transform: Transform::from_translation(Vec3::ZERO),
-            ..default()
-        })
-        .insert(WaveGridCellTag( smesh_hdl ))
+        .spawn((
+            Mesh3d(smesh_hdl.clone()),
+            MeshMaterial3d(mt_hdl),
+            Transform::from_translation(Vec3::ZERO),
+            WaveGridCellTag( smesh_hdl )
+        ))
         .id();
-    commands.entity(wavegrid_frame).push_children(&[ surface_plane ]);
+    commands.entity(wavegrid_frame).add_child(surface_plane);
 }
 
 
@@ -123,7 +121,7 @@ pub fn update_surface(
     grid: Res<Grid>,
     cells: Query<(Entity, &FluidQuantityMass, &FluidParticleVelocity, &GridCellIndex), With<GridCellType>>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mesh_handles: Query<&Handle<Mesh>, With<WaveGridCellTag>>,
+    mesh_handles: Query<&WaveGridCellTag>,
     mut surface_frames: Query<&mut Transform, With<WaveGridFrameTag>>,
 ) {
     fn calculate_surface_updates( x: f32, y: f32, z: f32, grid: &Res<Grid>, velo: &[Vec3], mass: &[f32]) -> [f32; 5] {
@@ -163,7 +161,7 @@ pub fn update_surface(
     // technically, we should only have one mesh that matches the query
     let mesh_hdl = mesh_handles.get_single().unwrap();
     
-    if let Some( mesh ) = meshes.get_mut(mesh_hdl) {
+    if let Some( mesh ) = meshes.get_mut(&mesh_hdl.0) {
         if let Some(VertexAttributeValues::Float32x3(positions)) =
             mesh.attribute(Mesh::ATTRIBUTE_POSITION)
         {

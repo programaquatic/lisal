@@ -65,43 +65,44 @@ fn initialize(
     // cam_center is the transparent parent of the camera to simplify the cam-panning
     // all panning happens within this parent
     let cam_center_parent = commands
-        .spawn(PbrBundle {
-            mesh: meshes.add(Mesh::from(Sphere::new(0.1).mesh().ico(5).unwrap())),
-            material: materials.add(StandardMaterial {
+        .spawn((
+            Name::new("CameraCenter"),
+            Mesh3d(meshes.add(Sphere::new(0.1).mesh().ico(5).unwrap())),
+            MeshMaterial3d(materials.add(StandardMaterial {
                 base_color: Color::linear_rgba(0.7, 0.8, 0.7, 1.0),
                 alpha_mode: AlphaMode::Opaque,
                 ..default()
-            }),
-            transform: Transform::from_translation( tank_cfg.get_center() ),
-            ..default()
-        })
+            })),
+            Transform::from_translation( tank_cfg.get_center() ),
+        ))
             // TransformBundle::from_transform(
             //     Transform::from_translation(tank_cfg.get_center())
             // ))
-        .insert(Name::new("CameraCenter"))
         .insert(AquaSimCamElement(CameraElement::PanningPoint))
         .id();
 
     // cam-holder is the transparent parent of the camera to simplify the cam-orbiting
     // all rotation and panning happens within this parent
-    let cam_holder = commands.spawn(TransformBundle::from_transform(Transform::from_rotation(Quat::from_rotation_x(0.0))))
-        .insert(Name::new("CameraHolder"))
+    let cam_holder = commands.spawn((
+        Name::new("CameraHolder"),
+        Transform::from_rotation(Quat::from_rotation_x(0.0))
+    ))
         .insert(AquaSimCamElement( CameraElement::OrbitHandle ))
         .id();
 
     // the cam is the child getting pulled/rotated along with it
     // only the distance from the center of the parent is being associated with the cam itself
     let cam = commands
-        .spawn(Camera3dBundle {
-            transform: Transform::from_translation(initial_cam).looking_at(Vec3::ZERO, Vec3::Y),
-            ..default()
-        })
-        .insert(Name::new("Camera"))
+        .spawn((
+            Name::new("Camera"),
+            Camera3d::default(),
+            Transform::from_translation(initial_cam).looking_at(Vec3::ZERO, Vec3::Y),
+        ))
         .insert(AquaSimCamElement( CameraElement::Camera ))
         .id();
 
-    commands.entity(cam_center_parent).push_children(&[ cam_holder ]);
-    commands.entity(cam_holder).push_children(&[ cam ]);
+    commands.entity(cam_center_parent).add_child(cam_holder);
+    commands.entity(cam_holder).add_child(cam);
 }
 
 
