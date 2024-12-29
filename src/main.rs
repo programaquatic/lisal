@@ -16,7 +16,6 @@
 
 use bevy::{
     prelude::*,
-    math::prelude::Sphere,
     pbr::CascadeShadowConfigBuilder,
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
 };
@@ -43,9 +42,9 @@ fn setup(
 ) {
     // create a textured background so that any potential reflections and/or water surface vectors become more visible
     let text_hdl = Some(asset_server.load("textures/flower_background.png"));
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(Plane3d::default().mesh().size(500., 500.))),
-        material: materials.add(StandardMaterial {
+    commands.spawn((
+        Mesh3d(meshes.add(Plane3d::default().mesh().size(500., 500.))),
+        MeshMaterial3d(materials.add(StandardMaterial {
             base_color: Color::linear_rgba(0.8, 0.7, 0.1, 1.0),
             base_color_texture: text_hdl.clone(),
             // emissive: (),
@@ -63,19 +62,19 @@ fn setup(
             // alpha_mode: (),
             // depth_bias: ()
             ..default()
-        }),
-        transform: Transform::from_xyz(0.0, 50., -50.)
+        })),
+        Transform::from_xyz(0.0, 50., -50.)
             .with_rotation( Quat::from_rotation_x( std::f32::consts::PI / 2.) ),
-        ..default()});
+    ));
 
 
-    commands.spawn(DirectionalLightBundle {
-        directional_light: DirectionalLight {
+    commands.spawn((
+        DirectionalLight {
             illuminance: light_consts::lux::OVERCAST_DAY,
             shadows_enabled: true,
             ..default()
         },
-        transform: Transform {
+        Transform {
             translation: Vec3::new(60., 150.0, 20.0),
             rotation: Quat::from_rotation_x(-PI / 3.),
             ..default()
@@ -83,26 +82,24 @@ fn setup(
         // The default cascade config is designed to handle large scenes.
         // As this example has a much smaller world, we can tighten the shadow
         // bounds for better visual quality.
-        cascade_shadow_config: CascadeShadowConfigBuilder {
+        CascadeShadowConfigBuilder {
             first_cascade_far_bound: 4.0,
             maximum_distance: 10.0,
             ..default()
         }
-        .into(),
-        ..default()
-    });
+        .build(),
+        ));
 }
 
 
 fn main() {
     App::new()
-        .insert_resource(Msaa::Sample4)
         .add_plugins(DefaultPlugins) //.set(CorePlugin { task_pool_options: TaskPoolOptions::with_num_threads(8), }))
         .add_systems(Startup, setup)
 
         // Diagnostics and Inspectors
-        .add_plugins(LogDiagnosticsPlugin::default())
-        .add_plugins(FrameTimeDiagnosticsPlugin)
+        // .add_plugins(LogDiagnosticsPlugin::default())
+        // .add_plugins(FrameTimeDiagnosticsPlugin)
         // .add_plugins(WorldInspectorPlugin::new())
 
         // old Rapier/Physics experiments

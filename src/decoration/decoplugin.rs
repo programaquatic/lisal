@@ -56,18 +56,17 @@ fn initialize(
 
     // experimental 'rock'-sphere to see how the flow goes around the obstacle
     let rock_mesh = Sphere::new(15.0 * tank_cfg.scale).mesh().ico(16).unwrap();
-    let collider = Collider::from_bevy_mesh( &rock_mesh, &ComputedColliderShape::TriMesh ).unwrap();
-    let rock = commands.spawn(PbrBundle {
-        mesh: meshes.add(rock_mesh),
-        material: decoration_material_hdl,
-        transform: Transform::from_translation( Vec3::new( 80., 0.0, 35. ) * tank_cfg.scale ),
-        ..default()
-    })
+    let collider = Collider::from_bevy_mesh( &rock_mesh, &ComputedColliderShape::TriMesh(TriMeshFlags::all()) ).unwrap();
+    let rock = commands.spawn((
+        Mesh3d(meshes.add(rock_mesh)),
+        MeshMaterial3d(decoration_material_hdl),
+        Transform::from_translation( Vec3::new( 80., 0.0, 35. ) * tank_cfg.scale ),
+    ))
         .insert( collider )
         .insert( RigidBody::Fixed )
         .insert( DecorationTag )
         .id();
-    commands.entity(tank_cfg.get_tank_parent()).push_children( &[ rock ]);
+    commands.entity(tank_cfg.get_tank_parent()).add_child( rock );
 }
 
 

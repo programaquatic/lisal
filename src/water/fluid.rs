@@ -102,12 +102,11 @@ fn fill_tank(
         let particle = if count.0 % (constants.MAX_PARTICLES / visible_particles) == 0 {
             visible = constants.DEBUG_FLUID_PARTICLES.spec;
             commands// only make one visible particle
-                .spawn(PbrBundle {
-                    mesh: meshes.add(Sphere::new(particle_radius + (particle_radius * red)).mesh().ico(4).unwrap()),
-                    material: water_material.clone(),
-                    transform: Transform::from_translation( wiggle ),
-                    ..default()
-                })
+                .spawn((
+                    Mesh3d(meshes.add(Sphere::new(particle_radius + (particle_radius * red)).mesh().ico(4).unwrap())),
+                    MeshMaterial3d(water_material.clone()),
+                    Transform::from_translation( wiggle ),
+                ))
                     // .insert(ColliderExperiment)
                     // .insert(RigidBody::KinematicPositionBased)
                     // .insert(Collider::ball( particle_radius / grid.get_scale() ))
@@ -135,11 +134,10 @@ fn fill_tank(
         } else { //  otherwise spawn a particle without visibility
             visible = constants.DEBUG_FLUID_PARTICLES.fill;
             commands
-                .spawn(SpatialBundle {
-                    transform: Transform::from_translation( wiggle ),
-                    visibility: Visibility::default(),
-                    ..default()
-                })
+                .spawn((
+                    Transform::from_translation( wiggle ),
+                    Visibility::default(),
+                ))
                 .insert(resources::FluidParticlePosition(Vec3A::from(wiggle)))
                 .insert(resources::FluidParticleVelocity(Vec3A::from(pump_v)))
                 .insert(resources::FluidQuantityMass( constants.DEFAULT_PARTICLE_MASS ))
@@ -155,13 +153,13 @@ fn fill_tank(
                 .id()
         };
         // insert particle as children
-        commands.entity(id).push_children(&[particle]);
+        commands.entity(id).add_child(particle);
 
         // visualize every added particle (if configured)
         if visible {
             commands.entity( particle )
-                .insert(meshes.add(Sphere::new(particle_radius).mesh().ico(8).unwrap()))
-                .insert(water_material.clone());
+                .insert(Mesh3d(meshes.add(Sphere::new(particle_radius).mesh().ico(8).unwrap())))
+                .insert(MeshMaterial3d(water_material.clone()));
         }
         count.0 += 1;
     }
@@ -198,15 +196,14 @@ fn init_fluid_particle_system(
     let mut particle_id = 0;
 
     let particle_frame = commands
-        .spawn(SpatialBundle {
-            transform: Transform::from_translation( grid.to_world_coord( -Vec3::ONE )),
+        .spawn((
+            Name::new("Particle_Frame"),
+            resources::ParticleFrameTag,
+            resources::ParticleCount(0),
+            Transform::from_translation( grid.to_world_coord( -Vec3::ONE )),
                 // .with_scale( Vec3::splat( grid.get_scale()) ),
-            visibility: Visibility::default(),
-            ..Default::default()
-        })
-        .insert(resources::ParticleFrameTag)
-        .insert(resources::ParticleCount(0))
-        .insert(Name::new("Particle_Frame"))
+            Visibility::default(),
+        ))
         .id();
 
 
@@ -229,11 +226,10 @@ fn init_fluid_particle_system(
                     continue;
                 }
                 let particle = commands
-                            .spawn(SpatialBundle {
-                                transform: Transform::from_translation( wiggle ),
-                                visibility: Visibility::default(),
-                                ..default()
-                            })
+                            .spawn((
+                                Transform::from_translation( wiggle ),
+                                Visibility::default(),
+                            ))
                     .insert(resources::FluidParticlePosition(Vec3A::from(wiggle)))
                     .insert(resources::FluidParticleVelocity(Vec3A::ZERO))
                     .insert(resources::FluidQuantityMass( constants.DEFAULT_PARTICLE_MASS ))
@@ -251,12 +247,12 @@ fn init_fluid_particle_system(
                 particle_id += 1;
 
                 // insert particle as children
-                commands.entity(particle_frame).push_children(&[particle]);
+                commands.entity(particle_frame).add_child(particle);
                 if constants.DEBUG_FLUID_PARTICLES.base {
                     commands.entity(particle)
                     //// Uncomment if you want to see all particles
-                        .insert(meshes.add(Sphere::new(_particle_radius).mesh().ico(4).unwrap()))
-                        .insert(water_material_hdl.clone());
+                        .insert(Mesh3d(meshes.add(Sphere::new(_particle_radius).mesh().ico(4).unwrap())))
+                        .insert(MeshMaterial3d(water_material_hdl.clone()));
                 }
             }
         }
@@ -381,7 +377,7 @@ pub fn particle_boundary_enforcement(
 
 pub fn _collider_update(
     _constants: Res<Constants>,
-    r3d_context: Res<RapierContext>,
+    r3d_context: ReadDefaultRapierContext,
     mut particles: Query<( &GlobalTransform, &mut resources::FluidParticlePosition,
                             &mut resources::FluidParticleVelocity ), With<ColliderExperiment>>
 ) {

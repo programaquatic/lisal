@@ -273,11 +273,10 @@ pub fn setup_fluid_grid(
         }
 
         let cell_id = commands
-            .spawn(SpatialBundle {
-                transform: Transform::from_translation( xyz.as_vec3() ),
-                visibility: Visibility::default(),
-                ..default()
-            })
+            .spawn((
+                Transform::from_translation( xyz.as_vec3() ),
+                Visibility::default(),
+            ))
             .insert(gct.clone())
             .insert(FluidParticleVelocity(Vec3A::ZERO))
             .insert(FluidQuantityMass( 0.0 ))
@@ -313,7 +312,7 @@ pub fn setup_fluid_grid(
         }
     }
 
-    commands.entity( ptank ).push_children( &cells );
+    commands.entity( ptank ).add_children( &cells );
     grid.initialize( cells );
     commands.insert_resource(grid);
 }
@@ -506,16 +505,15 @@ pub fn show_grid_cells(
             if ! cn.0.is_empty() {
                 // println!("showgrid::loc: {}; cellvec: {}", position.translation, cn.0[0] );
                 let lookat = position.translation + Vec3::from( cn.0[0] );
-                commands.entity(item).insert(PbrBundle {
-                    mesh: grid_center_mesh.clone(),
-                    material: match gct {
+                commands.entity(item).insert((
+                    Mesh3d( grid_center_mesh.clone() ),
+                    MeshMaterial3d( match gct {
                         GridCellType::Fluid => grid_fluid_material_hdl.clone(),
                         GridCellType::Air => grid_air_material_hdl.clone(),
                         GridCellType::Solid => grid_center_material_hdl.clone(),
-                    },
-                    transform: Transform::from_translation( position.translation ).looking_at(lookat, Vec3::Y), //position.translation ),
-                    ..default()
-                });
+                    }),
+                    Transform::from_translation( position.translation ).looking_at(lookat, Vec3::Y), //position.translation ),
+                ));
             }
         }
     );
