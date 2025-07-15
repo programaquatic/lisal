@@ -99,7 +99,7 @@ fn main() {
 
         // Diagnostics and Inspectors
         // .add_plugins(LogDiagnosticsPlugin::default())
-        // .add_plugins(FrameTimeDiagnosticsPlugin)
+        .add_plugins(FrameTimeDiagnosticsPlugin::new(5))
         // .add_plugins(WorldInspectorPlugin::new())
 
         // old Rapier/Physics experiments

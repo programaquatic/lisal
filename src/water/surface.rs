@@ -159,7 +159,7 @@ pub fn update_surface(
         transform.translation.y = grid.to_world_coord( Vec3::splat(grid.get_surface_level()) ).y;
     });
     // technically, we should only have one mesh that matches the query
-    let mesh_hdl = mesh_handles.get_single().unwrap();
+    let mesh_hdl = mesh_handles.single().unwrap();
     
     if let Some( mesh ) = meshes.get_mut(&mesh_hdl.0) {
         if let Some(VertexAttributeValues::Float32x3(positions)) =

@@ -116,9 +116,9 @@ impl MeshOfSquares {
     #[allow(dead_code)]
     pub fn randomize_position(mut self, range: (f32, f32)) -> MeshOfSquares {
         let granularity = 200.;
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         for vertex in self.locations.iter_mut() {
-            let new_y = rng.gen_range(range.0 * granularity..range.1 * granularity) / (2.*granularity);
+            let new_y = rng.random_range(range.0 * granularity..range.1 * granularity) / (2.*granularity);
             vertex.y = new_y;
         }
         self
@@ -128,11 +128,11 @@ impl MeshOfSquares {
     #[allow(dead_code)]
     pub fn randomize_normals(mut self, noise_level: f32) -> MeshOfSquares {
         let granularity = 200.;
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         for normal in self.normals.iter_mut() {
-            normal.x += rng.gen_range( -granularity/2.0 .. granularity/2.0 ) * (noise_level / 2.0);
-            normal.y += rng.gen_range( -granularity/2.0 .. granularity/2.0 ) * (noise_level / 2.0);
-            normal.z += rng.gen_range( -granularity/2.0 .. granularity/2.0 ) * (noise_level / 2.0);
+            normal.x += rng.random_range( -granularity/2.0 .. granularity/2.0 ) * (noise_level / 2.0);
+            normal.y += rng.random_range( -granularity/2.0 .. granularity/2.0 ) * (noise_level / 2.0);
+            normal.z += rng.random_range( -granularity/2.0 .. granularity/2.0 ) * (noise_level / 2.0);
         }
         self
     }
