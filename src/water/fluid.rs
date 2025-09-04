@@ -424,41 +424,41 @@ impl Plugin for FluidPlugin {
                 grid::show_grid_cells
             )
 
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 grid::reset_fluid_grid_cells
                     .before(mlsmpm::p2g_stage1))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 mlsmpm::p2g_stage1
                     .before(mlsmpm::p2g_apply_stage1))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 mlsmpm::p2g_apply_stage1
                     .before(mlsmpm::p2g_stage2))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 mlsmpm::p2g_stage2
                     .before(mlsmpm::grid_update))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 mlsmpm::p2g_stage2_solids
                          .before(grid::wall_to_active_momentum))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                          grid::wall_to_active_momentum
                             .before(mlsmpm::grid_update))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 mlsmpm::grid_update
                     .before(grid::update_grid_cells))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 grid::update_grid_cells
                     .before(grid_to_particle))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 surface::update_surface
                     .after(grid::update_grid_cells))
             // .add_systems(Update,
             //     grid::external_forces_grid_cells
             //         .label("grid_ext_forces")
             //         .before("g2p"))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 grid_to_particle
                     .before(particle_boundary_enforcement))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 particle_boundary_enforcement
                 .before(particle_world_update))
             // .add_systems(Update,
@@ -466,10 +466,10 @@ impl Plugin for FluidPlugin {
             //         .label("collider_update")
             //         .after("g2p")
             //         .before("particle_world_update"))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 grid::debug_grid_cells
                     .after(grid::update_grid_cells))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 particle_world_update
             )
             .add_systems(Update,fill_tank)

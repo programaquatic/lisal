@@ -24,6 +24,10 @@ use bevy_rapier3d::{
     plugin::*,
     render::RapierDebugRenderPlugin,
 };
+
+use std::{
+    time::Duration
+};
 // use bevy_inspector_egui::WorldInspectorPlugin;
 
 use std::f32::consts::PI;
@@ -107,6 +111,7 @@ fn main() {
         //.insert_resource(RapierConfiguration { gravity: Vec3::ZERO, ..default() })
         // .add_plugins(RapierDebugRenderPlugin::default())
 
+        .insert_resource(Time::<Fixed>::from_hz(20.0))
         .add_plugins(tech::tank::TankPlugin)
         .add_plugins(tech::cam::AquaSimCamPlugin)
         .add_plugins(decoration::decoplugin::DecorationPlugin)
