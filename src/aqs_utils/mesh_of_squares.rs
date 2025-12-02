@@ -16,9 +16,9 @@
 
 use bevy::{
     prelude::*,
-    render::{
-        mesh::Indices, render_asset::RenderAssetUsages, render_resource::PrimitiveTopology
-    },
+    mesh::Indices,
+    asset::RenderAssetUsages,
+    render::render_resource::PrimitiveTopology,
 };
 use rand::Rng;
 use itertools::Itertools;

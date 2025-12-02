@@ -16,10 +16,8 @@
 
 use bevy::{
     prelude::*,
-    render::{
-        render_resource::AsBindGroup,
-        mesh::VertexAttributeValues,
-    },
+    mesh::VertexAttributeValues,
+    render::render_resource::AsBindGroup,
     reflect::TypePath,
 };
 
