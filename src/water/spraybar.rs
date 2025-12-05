@@ -36,7 +36,7 @@ impl SprayBar {
             extent,
             precalc: vec![ Vec3::ZERO; 1 ],
             precalc_count: 1,
-            rng: rand::SeedableRng::from_entropy(),
+            rng: rand::SeedableRng::from_os_rng(),
         }
     }
 
@@ -48,9 +48,9 @@ impl SprayBar {
             || {
                 self.center
                     + Vec3::new(
-                        self.rng.gen_range(-100.0..100.0) / 201. * self.extent.x,
-                        self.rng.gen_range(-100.0..100.0) / 201. * self.extent.y,
-                        self.rng.gen_range(-100.0..100.0) / 201. * self.extent.z,
+                        self.rng.random_range(-100.0..100.0) / 201. * self.extent.x,
+                        self.rng.random_range(-100.0..100.0) / 201. * self.extent.y,
+                        self.rng.random_range(-100.0..100.0) / 201. * self.extent.z,
                     )
             });
     }
@@ -58,9 +58,9 @@ impl SprayBar {
     pub fn new_position(&mut self) -> Vec3 {
         self.center
             + Vec3::new(
-                self.rng.gen_range(-100.0..100.0) / 201. * self.extent.x,
-                self.rng.gen_range(-100.0..100.0) / 201. * self.extent.y,
-                self.rng.gen_range(-100.0..100.0) / 201. * self.extent.z,
+                self.rng.random_range(-100.0..100.0) / 201. * self.extent.x,
+                self.rng.random_range(-100.0..100.0) / 201. * self.extent.y,
+                self.rng.random_range(-100.0..100.0) / 201. * self.extent.z,
             )
     }
 

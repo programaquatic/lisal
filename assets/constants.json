@@ -1,7 +1,7 @@
 // Global constants definitions
 {
     "MAX_GRID_CELLS": 50000,
-    "WORLD_DT": 0.04,
+    "WORLD_DT": 0.05,
     "DEFAULT_GRAVITY": -9.81,
 
     "DEFAULT_DENSITY": [4.0, 1.0],

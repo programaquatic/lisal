@@ -113,7 +113,7 @@ fn move_cam(
     input_mouse: Res<ButtonInput<MouseButton>>,
     mut camera_elements: Query<(&mut Transform, &AquaSimCamElement)>,
 ) {
-    let window = windows.single();
+    let window = windows.single().unwrap();
     let orbit = MouseButton::Right;
     let pan = MouseButton::Middle;
 

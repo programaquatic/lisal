@@ -74,7 +74,7 @@ fn fill_tank(
     let inlet = &tank_cfg.get_pump_definition().inlet;
     let mut spraybar = SprayBar::new( inlet.location, inlet.extent );
 
-    let (id, mut count) = particle_frame.get_single_mut().unwrap();
+    let (id, mut count) = particle_frame.single_mut().unwrap();
     if count.0 > constants.MAX_PARTICLES {
         return;
     }
@@ -175,7 +175,7 @@ fn init_fluid_particle_system(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut commands: Commands,
 ) {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     let mut water_material : [Handle<StandardMaterial>; 4] = Default::default();
 
@@ -218,9 +218,9 @@ fn init_fluid_particle_system(
             for _ in 0..1 + extra_particle {
                 let wiggle = position.translation
                     + Vec3::new(
-                        rng.gen_range(0.0..399.0) / 400.,
-                        rng.gen_range(0.0..399.0) / 400.,
-                        rng.gen_range(0.0..399.0) / 400.,
+                        rng.random_range(0.0..399.0) / 400.,
+                        rng.random_range(0.0..399.0) / 400.,
+                        rng.random_range(0.0..399.0) / 400.,
                     );
                 if wiggle.y > fill_height {
                     continue;
@@ -377,19 +377,20 @@ pub fn particle_boundary_enforcement(
 
 pub fn _collider_update(
     _constants: Res<Constants>,
-    r3d_context: ReadDefaultRapierContext,
+    r3d_context: ReadRapierContext,
     mut particles: Query<( &GlobalTransform, &mut resources::FluidParticlePosition,
                             &mut resources::FluidParticleVelocity ), With<ColliderExperiment>>
 ) {
     // println!("Observed Particles: {}", particles.iter().len());
+    let ctx = r3d_context.single().unwrap();
     particles.par_iter_mut().for_each(
         |(position, mut _part_location, mut velocity)| {
-            if let Some( (_collision_with, ray_x) ) =
-                r3d_context.cast_ray_and_get_normal(position.translation(),
-                                                    Vec3::from( velocity.0 ),
-                                                    0.1,
-                                                    true,
-                                                    QueryFilter::only_fixed() )
+            let collision_point = ctx.cast_ray_and_get_normal(position.translation(),
+                                                              Vec3::from( velocity.0 ),
+                                                              0.1,
+                                                              true,
+                                                              QueryFilter::only_fixed() );
+            if let Some( (_collision_with, ray_x) ) = collision_point
             {
                 let projected_v = Vec3A::from( ray_x.normal ) * velocity.0.dot( ray_x.normal.into() );
                 // part_location.0 += ray_x.normal * _constants.WORLD_DT;
@@ -423,41 +424,41 @@ impl Plugin for FluidPlugin {
                 grid::show_grid_cells
             )
 
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 grid::reset_fluid_grid_cells
                     .before(mlsmpm::p2g_stage1))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 mlsmpm::p2g_stage1
                     .before(mlsmpm::p2g_apply_stage1))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 mlsmpm::p2g_apply_stage1
                     .before(mlsmpm::p2g_stage2))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 mlsmpm::p2g_stage2
                     .before(mlsmpm::grid_update))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 mlsmpm::p2g_stage2_solids
                          .before(grid::wall_to_active_momentum))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                          grid::wall_to_active_momentum
                             .before(mlsmpm::grid_update))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 mlsmpm::grid_update
                     .before(grid::update_grid_cells))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 grid::update_grid_cells
                     .before(grid_to_particle))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 surface::update_surface
                     .after(grid::update_grid_cells))
             // .add_systems(Update,
             //     grid::external_forces_grid_cells
             //         .label("grid_ext_forces")
             //         .before("g2p"))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 grid_to_particle
                     .before(particle_boundary_enforcement))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 particle_boundary_enforcement
                 .before(particle_world_update))
             // .add_systems(Update,
@@ -465,10 +466,10 @@ impl Plugin for FluidPlugin {
             //         .label("collider_update")
             //         .after("g2p")
             //         .before("particle_world_update"))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 grid::debug_grid_cells
                     .after(grid::update_grid_cells))
-            .add_systems(Update,
+            .add_systems(FixedUpdate,
                 particle_world_update
             )
             .add_systems(Update,fill_tank)
