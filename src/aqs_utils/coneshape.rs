@@ -5,12 +5,11 @@
 */
 
 use bevy::{
+    asset::RenderAssetUsages,
     math::Vec3,
     mesh::{Indices, Mesh},
-    asset::RenderAssetUsages,
     render::render_resource::PrimitiveTopology,
 };
-
 
 #[derive(Debug, Clone, Copy)]
 pub struct ZCone {
@@ -31,11 +30,13 @@ impl Default for ZCone {
 
 impl From<ZCone> for Mesh {
     fn from(cone: ZCone) -> Self {
-
         // Validate input parameters
         assert!(cone.height > 0.0, "Must have positive height");
         assert!(cone.radius > 0.0, "Must have positive radius");
-        assert!(cone.subdivisions > 2, "Must have at least 3 subdivisions to close the surface");
+        assert!(
+            cone.subdivisions > 2,
+            "Must have at least 3 subdivisions to close the surface"
+        );
 
         // code adapted from http://apparat-engine.blogspot.com/2013/04/procedural-meshes-torus.html
         // (source code at https://github.com/SEilers/Apparat)
@@ -93,7 +94,10 @@ impl From<ZCone> for Mesh {
             indices.push(left as u32);
         }
 
-        let mut mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default() );
+        let mut mesh = Mesh::new(
+            PrimitiveTopology::TriangleList,
+            RenderAssetUsages::default(),
+        );
         mesh.insert_indices(Indices::U32(indices));
         mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
         mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);

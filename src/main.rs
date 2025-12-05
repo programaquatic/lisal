@@ -15,26 +15,21 @@
 */
 
 use bevy::{
-    prelude::*,
-    light::CascadeShadowConfigBuilder,
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
+    light::CascadeShadowConfigBuilder,
+    prelude::*,
 };
 
-use bevy_rapier3d::{
-    plugin::*,
-    render::RapierDebugRenderPlugin,
-};
+use bevy_rapier3d::{plugin::*, render::RapierDebugRenderPlugin};
 
-use std::{
-    time::Duration
-};
+use std::time::Duration;
 // use bevy_inspector_egui::WorldInspectorPlugin;
 
 use std::f32::consts::PI;
 
 mod aqs_utils;
-mod tech;
 mod decoration;
+mod tech;
 mod water;
 
 /// set up a simple 3D scene
@@ -68,9 +63,8 @@ fn setup(
             ..default()
         })),
         Transform::from_xyz(0.0, 50., -50.)
-            .with_rotation( Quat::from_rotation_x( std::f32::consts::PI / 2.) ),
+            .with_rotation(Quat::from_rotation_x(std::f32::consts::PI / 2.)),
     ));
-
 
     commands.spawn((
         DirectionalLight {
@@ -92,30 +86,25 @@ fn setup(
             ..default()
         }
         .build(),
-        ));
+    ));
 }
-
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins) //.set(CorePlugin { task_pool_options: TaskPoolOptions::with_num_threads(8), }))
         .add_systems(Startup, setup)
-
         // Diagnostics and Inspectors
         // .add_plugins(LogDiagnosticsPlugin::default())
         .add_plugins(FrameTimeDiagnosticsPlugin::new(5))
         // .add_plugins(WorldInspectorPlugin::new())
-
         // old Rapier/Physics experiments
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         //.insert_resource(RapierConfiguration { gravity: Vec3::ZERO, ..default() })
         // .add_plugins(RapierDebugRenderPlugin::default())
-
         .insert_resource(Time::<Fixed>::from_hz(20.0))
         .add_plugins(tech::tank::TankPlugin)
         .add_plugins(tech::cam::AquaSimCamPlugin)
         .add_plugins(decoration::decoplugin::DecorationPlugin)
         .add_plugins(water::fluid::FluidPlugin)
-
         .run();
 }

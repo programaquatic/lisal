@@ -15,11 +15,7 @@
 */
 
 use bevy::math::Vec3;
-use rand::{
-    Rng,
-    rngs::StdRng,
-};
-
+use rand::{Rng, rngs::StdRng};
 
 pub struct SprayBar {
     center: Vec3,
@@ -30,11 +26,11 @@ pub struct SprayBar {
 }
 
 impl SprayBar {
-    pub fn new( center: Vec3, extent: Vec3 ) -> Self {
+    pub fn new(center: Vec3, extent: Vec3) -> Self {
         Self {
             center,
             extent,
-            precalc: vec![ Vec3::ZERO; 1 ],
+            precalc: vec![Vec3::ZERO; 1],
             precalc_count: 1,
             rng: rand::SeedableRng::from_os_rng(),
         }
@@ -43,16 +39,14 @@ impl SprayBar {
     #[allow(dead_code)]
     pub fn precomp(&mut self, count: usize) {
         self.precalc_count = count;
-        self.precalc.resize_with(
-            count,
-            || {
-                self.center
-                    + Vec3::new(
-                        self.rng.random_range(-100.0..100.0) / 201. * self.extent.x,
-                        self.rng.random_range(-100.0..100.0) / 201. * self.extent.y,
-                        self.rng.random_range(-100.0..100.0) / 201. * self.extent.z,
-                    )
-            });
+        self.precalc.resize_with(count, || {
+            self.center
+                + Vec3::new(
+                    self.rng.random_range(-100.0..100.0) / 201. * self.extent.x,
+                    self.rng.random_range(-100.0..100.0) / 201. * self.extent.y,
+                    self.rng.random_range(-100.0..100.0) / 201. * self.extent.z,
+                )
+        });
     }
 
     pub fn new_position(&mut self) -> Vec3 {
@@ -66,7 +60,6 @@ impl SprayBar {
 
     #[allow(dead_code)]
     pub fn precomp_position(&self, idx: usize) -> Vec3 {
-        self.precalc[ idx % self.precalc_count ]
+        self.precalc[idx % self.precalc_count]
     }
-
 }

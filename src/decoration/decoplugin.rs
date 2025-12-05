@@ -14,32 +14,23 @@
    limitations under the License.
 */
 
-use bevy::{
-    prelude::*,
-    math::prelude::Sphere
-};
+use bevy::{math::prelude::Sphere, prelude::*};
 use bevy_rapier3d::prelude::*;
 
 use crate::{
+    decoration::{ground, types::DecorationTag},
     tech::tank::Tank,
-    decoration::{
-        types::DecorationTag,
-        ground,
-    },
 };
-
 
 pub struct DecorationPlugin;
 
 impl Plugin for DecorationPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_systems(PreStartup, ground::ground)
+        app.add_systems(PreStartup, ground::ground)
             .add_systems(PreStartup, initialize)
             .add_systems(PreStartup, remove_colliders);
     }
 }
-
 
 // Temporary function to place some 'obstacles' into the tank for debugging flow
 fn initialize(
@@ -56,29 +47,30 @@ fn initialize(
 
     // experimental 'rock'-sphere to see how the flow goes around the obstacle
     let rock_mesh = Sphere::new(15.0 * tank_cfg.scale).mesh().ico(16).unwrap();
-    let collider = Collider::from_bevy_mesh( &rock_mesh, &ComputedColliderShape::TriMesh(TriMeshFlags::all()) ).unwrap();
-    let rock = commands.spawn((
-        Mesh3d(meshes.add(rock_mesh)),
-        MeshMaterial3d(decoration_material_hdl),
-        Transform::from_translation( Vec3::new( 80., 0.0, 35. ) * tank_cfg.scale ),
-    ))
-        .insert( collider )
-        .insert( RigidBody::Fixed )
-        .insert( DecorationTag )
+    let collider = Collider::from_bevy_mesh(
+        &rock_mesh,
+        &ComputedColliderShape::TriMesh(TriMeshFlags::all()),
+    )
+    .unwrap();
+    let rock = commands
+        .spawn((
+            Mesh3d(meshes.add(rock_mesh)),
+            MeshMaterial3d(decoration_material_hdl),
+            Transform::from_translation(Vec3::new(80., 0.0, 35.) * tank_cfg.scale),
+        ))
+        .insert(collider)
+        .insert(RigidBody::Fixed)
+        .insert(DecorationTag)
         .id();
-    commands.entity(tank_cfg.get_tank_parent()).add_child( rock );
+    commands.entity(tank_cfg.get_tank_parent()).add_child(rock);
 }
-
-
-
-
 
 // get rid of decoration colliders because they're only needed during initialization for fluid grid cells to become solid
 fn remove_colliders(
     mut commands: Commands,
     colliders: Query<(Entity, &Collider), With<DecorationTag>>,
 ) {
-    colliders.iter().for_each( | (item, _) | {
-        commands.entity( item ).remove::<Collider>();
+    colliders.iter().for_each(|(item, _)| {
+        commands.entity(item).remove::<Collider>();
     })
 }

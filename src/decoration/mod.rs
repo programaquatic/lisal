@@ -14,6 +14,6 @@
    limitations under the License.
 */
 
-pub mod types;
 pub mod decoplugin;
 pub mod ground;
+pub mod types;

@@ -21,27 +21,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-
 // Parts of this code are based on github.com/robkau who did this for 2D
 //    see: https://github.com/robkau/mlsmpm-particles-rs
-
 
 use std::ops::Sub;
 
 use bevy::{
+    math::{Mat3A, Vec3A},
     prelude::*,
-    math::{
-        Vec3A,
-        Mat3A,
-    },
 };
 
 use crate::aqs_utils::constants;
 
 use crate::water::{
-    resources,
     grid,
-    grid::{GridCellType, GridCellIndex},
+    grid::{GridCellIndex, GridCellType},
+    resources,
 };
 
 /// STEP: 0 resetting the grid
@@ -62,10 +57,11 @@ pub fn p2g_stage1(
             &mut resources::CellMMAccumulation,
         ),
         With<resources::ParticleTag>,
-        >,
+    >,
 ) {
-    particles.par_iter_mut().for_each(
-        |(location, velocity, mass, affine_momentum, mut cmma)| {
+    particles
+        .par_iter_mut()
+        .for_each(|(location, velocity, mass, affine_momentum, mut cmma)| {
             // assert_eq!(location.0.is_nan(), false);
             let cell_idx = location.0.as_uvec3();
             let cell_diff = (location.0 - cell_idx.as_vec3a()) - 0.5;
@@ -87,7 +83,7 @@ pub fn p2g_stage1(
                             (cell_idx.z as i32 + gz as i32 - 1) as u32,
                         );
                         let cell_dist = (cell_pos.as_vec3a() - location.0) + Vec3A::splat(0.5);
-                        let cell_at_index = grid.index_of_vec( &cell_pos );
+                        let cell_at_index = grid.index_of_vec(&cell_pos);
 
                         let q = affine_momentum.0 * cell_dist;
                         let mass_contrib = weight * mass.0;
@@ -101,8 +97,7 @@ pub fn p2g_stage1(
                     }
                 }
             }
-        },
-    );
+        });
 }
 
 // Helper system to go over each particle and accumulate the grid-cell computation results
@@ -111,9 +106,9 @@ pub fn p2g_apply_stage1(
     particles: Query<(&resources::CellMMAccumulation,), With<resources::ParticleTag>>,
 ) {
     particles.iter().for_each(|cmma| {
-        for change in cmma.0 .0.iter() {
-            grid.get_tmp_mass_mut()[ change.cell_idx ] += change.mass;
-            grid.get_tmp_velo_mut()[ change.cell_idx ] += change.momentum;
+        for change in cmma.0.0.iter() {
+            grid.get_tmp_mass_mut()[change.cell_idx] += change.mass;
+            grid.get_tmp_velo_mut()[change.cell_idx] += change.momentum;
         }
     });
 }
@@ -130,10 +125,11 @@ pub fn p2g_stage2(
             &mut resources::CellMMAccumulation,
         ),
         With<resources::ParticleTag>,
-        >,
+    >,
 ) {
-    flparticles.par_iter_mut().for_each(
-        |(location, quantity, affmom, mut cmma)| {
+    flparticles
+        .par_iter_mut()
+        .for_each(|(location, quantity, affmom, mut cmma)| {
             let mut density: f32 = 0.0;
 
             let cell_idx = location.0.as_uvec3();
@@ -151,9 +147,9 @@ pub fn p2g_stage2(
                             (cell_idx.y as i32 + gy as i32 - 1) as u32,
                             (cell_idx.z as i32 + gz as i32 - 1) as u32,
                         );
-                        let cell_at_index = grid.index_of_vec( &cell_pos );
+                        let cell_at_index = grid.index_of_vec(&cell_pos);
 
-                        density += grid.get_tmp_mass()[ cell_at_index ] * weight;
+                        density += grid.get_tmp_mass()[cell_at_index] * weight;
                     }
                 }
             }
@@ -164,8 +160,10 @@ pub fn p2g_stage2(
             let pressure = f32::max(
                 -0.1,
                 constants.FLUID_MODEL.eos_stiffness
-                    * (f32::powf(density / constants.FLUID_MODEL.rest_density,
-                                 constants.FLUID_MODEL.eos_power) - 1.0),
+                    * (f32::powf(
+                        density / constants.FLUID_MODEL.rest_density,
+                        constants.FLUID_MODEL.eos_power,
+                    ) - 1.0),
             );
             let mut stress = Mat3A::from_cols(
                 Vec3A::new(-pressure, 0.0, 0.0),
@@ -194,7 +192,7 @@ pub fn p2g_stage2(
                         );
 
                         let cell_dist = (cell_pos.as_vec3a() - location.0) + Vec3A::splat(0.5);
-                        let cell_at_index = grid.index_of_vec( &cell_pos );
+                        let cell_at_index = grid.index_of_vec(&cell_pos);
                         let new_momentum = (eq_16_term_0 * weight) * cell_dist;
                         cmma.0[gx + 3 * gy + 9 * gz] = resources::CellMMAChange {
                             cell_idx: cell_at_index,
@@ -204,30 +202,29 @@ pub fn p2g_stage2(
                     }
                 }
             }
-        },
-    );
+        });
 }
-
 
 pub fn p2g_stage2_solids(
     constants: Res<constants::Constants>,
     grid: Res<grid::Grid>,
     mut sdparticles: Query<
-            (
-                &resources::FluidParticlePosition,
-                &resources::FluidQuantityMass,
-                &resources::AffineMomentum,
-                &mut resources::CellMMAccumulation,
-            ),
+        (
+            &resources::FluidParticlePosition,
+            &resources::FluidQuantityMass,
+            &resources::AffineMomentum,
+            &mut resources::CellMMAccumulation,
+        ),
         With<resources::SolidParticleTag>,
-        >,
+    >,
 ) {
     let num_particles = sdparticles.iter().count();
     if num_particles < 1 {
         return;
     }
-    sdparticles.par_iter_mut().for_each(
-        |(location, mass, _, mut mmc)| {
+    sdparticles
+        .par_iter_mut()
+        .for_each(|(location, mass, _, mut mmc)| {
             let mut density: f32 = 0.0;
 
             let cell_idx = location.0.as_uvec3();
@@ -245,9 +242,9 @@ pub fn p2g_stage2_solids(
                             (cell_idx.y as i32 + gy as i32 - 1) as u32,
                             (cell_idx.z as i32 + gz as i32 - 1) as u32,
                         );
-                        let cell_at_index = grid.index_of_vec( &cell_pos );
+                        let cell_at_index = grid.index_of_vec(&cell_pos);
 
-                        density += grid.get_tmp_mass()[ cell_at_index ] * weight;
+                        density += grid.get_tmp_mass()[cell_at_index] * weight;
                     }
                 }
             }
@@ -281,7 +278,7 @@ pub fn p2g_stage2_solids(
                         );
 
                         let cell_dist = (cell_pos.as_vec3a() - location.0) + Vec3A::splat(0.5);
-                        let cell_at_index = grid.index_of_vec( &cell_pos );
+                        let cell_at_index = grid.index_of_vec(&cell_pos);
 
                         // store the fused force/momentum update from MLS-MPM to apply onto grid later.
                         // todo combine into grid(x,y) = total changes as they come in here...?
@@ -293,30 +290,29 @@ pub fn p2g_stage2_solids(
                     }
                 }
             }
-        },
-    );
+        });
 }
-
 
 pub fn grid_update(
     mut grid: ResMut<grid::Grid>,
     particles: Query<(&resources::CellMMAccumulation,), With<resources::ParticleTag>>,
-    mut cells: Query<(
-        &mut resources::FluidParticleVelocity,
-        &mut resources::FluidQuantityMass,
-        &GridCellIndex
-    ), With<GridCellType>>,
+    mut cells: Query<
+        (
+            &mut resources::FluidParticleVelocity,
+            &mut resources::FluidQuantityMass,
+            &GridCellIndex,
+        ),
+        With<GridCellType>,
+    >,
 ) {
     particles.iter().for_each(|cmma| {
-        for change in cmma.0 .0.iter() {
-            grid.get_tmp_velo_mut()[ change.cell_idx ] += change.momentum;
+        for change in cmma.0.0.iter() {
+            grid.get_tmp_velo_mut()[change.cell_idx] += change.momentum;
         }
     });
 
-    cells.par_iter_mut().for_each(
-        | (mut vel, mut mass, idx) | {
-            vel.0 = grid.get_tmp_velo()[ idx.0 ];
-            mass.0 = grid.get_tmp_mass()[ idx.0 ];
-        }
-    );
+    cells.par_iter_mut().for_each(|(mut vel, mut mass, idx)| {
+        vel.0 = grid.get_tmp_velo()[idx.0];
+        mass.0 = grid.get_tmp_mass()[idx.0];
+    });
 }
