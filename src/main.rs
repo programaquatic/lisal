@@ -16,7 +16,7 @@
 
 use bevy::{
     prelude::*,
-    pbr::CascadeShadowConfigBuilder,
+    light::CascadeShadowConfigBuilder,
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
 };
 

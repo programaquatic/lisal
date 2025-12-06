@@ -4,10 +4,12 @@
   Updated 2023 by github.com/programaquatic (point in Z-direction and center half-way of height)
 */
 
-use bevy::math::Vec3;
-use bevy::render::mesh::{Indices, Mesh};
-use bevy::render::render_asset::RenderAssetUsages;
-use bevy::render::render_resource::PrimitiveTopology;
+use bevy::{
+    math::Vec3,
+    mesh::{Indices, Mesh},
+    asset::RenderAssetUsages,
+    render::render_resource::PrimitiveTopology,
+};
 
 
 #[derive(Debug, Clone, Copy)]
