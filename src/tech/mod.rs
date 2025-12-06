@@ -14,6 +14,6 @@
    limitations under the License.
 */
 
-pub mod tank;
 pub mod cam;
 pub mod pump;
+pub mod tank;

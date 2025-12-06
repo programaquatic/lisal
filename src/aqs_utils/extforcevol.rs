@@ -15,7 +15,7 @@
 */
 
 use bevy::prelude::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ForceVolumeDirection {
@@ -39,7 +39,6 @@ impl ForceVolumeDirection {
     }
 }
 
-
 /// An external force that's going to be applied to a fluid grid cell
 ///  note: this is meant for individual pieces of ext force, i.e. the sources and not the effective ext force
 #[derive(Component, Resource, Serialize, Deserialize, Debug, Clone)]
@@ -62,13 +61,13 @@ impl Default for ExternalForceVolume {
     }
 }
 
-
 impl ExternalForceVolume {
     #[allow(dead_code)]
-    pub fn new(location: Vec3,
-               extent: Vec3,
-               direction: ForceVolumeDirection,
-               name: Option<String>,
+    pub fn new(
+        location: Vec3,
+        extent: Vec3,
+        direction: ForceVolumeDirection,
+        name: Option<String>,
     ) -> Self {
         ExternalForceVolume {
             location,
@@ -86,7 +85,7 @@ impl ExternalForceVolume {
 
     pub fn get_force_for_position(&self, refpoint: Vec3) -> Vec3 {
         let floc = (refpoint - self.location).abs();
-        let fextent_mask = floc.cmplt( self.extent ).all();
+        let fextent_mask = floc.cmplt(self.extent).all();
         let outward_norm = (refpoint - self.location).normalize_or_zero();
         let force = match self.direction {
             ForceVolumeDirection::Inward(speed) => -outward_norm * speed,
@@ -101,9 +100,9 @@ impl ExternalForceVolume {
         self.extent *= scale;
         // direction is not scaled
         self.direction = match self.direction {
-            ForceVolumeDirection::Inward(speed) => ForceVolumeDirection::Inward( speed * scale ),
-            ForceVolumeDirection::Outward(speed) => ForceVolumeDirection::Outward( speed * scale ),
-            ForceVolumeDirection::Parallel(dir) => ForceVolumeDirection::Parallel( dir * scale ),
+            ForceVolumeDirection::Inward(speed) => ForceVolumeDirection::Inward(speed * scale),
+            ForceVolumeDirection::Outward(speed) => ForceVolumeDirection::Outward(speed * scale),
+            ForceVolumeDirection::Parallel(dir) => ForceVolumeDirection::Parallel(dir * scale),
         };
     }
 }

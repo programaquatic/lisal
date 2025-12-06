@@ -15,16 +15,12 @@
 */
 
 use bevy::{
+    input::mouse::{MouseMotion, MouseWheel},
     prelude::*,
-    input::mouse::{
-        MouseMotion,
-        MouseWheel
-    }
 };
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::tech::tank::Tank;
-
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum CameraElement {
@@ -33,24 +29,20 @@ pub enum CameraElement {
     Camera = 0x2,
 }
 
-
 // Component to identify (query) the AquaSim Cameraholder
 #[derive(Component)]
 pub struct AquaSimCamElement(CameraElement);
-
 
 // Camera Scroll Factor
 const CSFACTOR: f32 = 0.5;
 const CCLOSEST: f32 = 2.0;
 
-
 pub struct AquaSimCamPlugin;
 
 impl Plugin for AquaSimCamPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_systems( Startup, initialize)
-            .add_systems( Update, move_cam);
+        app.add_systems(Startup, initialize)
+            .add_systems(Update, move_cam);
     }
 }
 
@@ -73,21 +65,22 @@ fn initialize(
                 alpha_mode: AlphaMode::Opaque,
                 ..default()
             })),
-            Transform::from_translation( tank_cfg.get_center() ),
+            Transform::from_translation(tank_cfg.get_center()),
         ))
-            // TransformBundle::from_transform(
-            //     Transform::from_translation(tank_cfg.get_center())
-            // ))
+        // TransformBundle::from_transform(
+        //     Transform::from_translation(tank_cfg.get_center())
+        // ))
         .insert(AquaSimCamElement(CameraElement::PanningPoint))
         .id();
 
     // cam-holder is the transparent parent of the camera to simplify the cam-orbiting
     // all rotation and panning happens within this parent
-    let cam_holder = commands.spawn((
-        Name::new("CameraHolder"),
-        Transform::from_rotation(Quat::from_rotation_x(0.0))
-    ))
-        .insert(AquaSimCamElement( CameraElement::OrbitHandle ))
+    let cam_holder = commands
+        .spawn((
+            Name::new("CameraHolder"),
+            Transform::from_rotation(Quat::from_rotation_x(0.0)),
+        ))
+        .insert(AquaSimCamElement(CameraElement::OrbitHandle))
         .id();
 
     // the cam is the child getting pulled/rotated along with it
@@ -98,13 +91,12 @@ fn initialize(
             Camera3d::default(),
             Transform::from_translation(initial_cam).looking_at(Vec3::ZERO, Vec3::Y),
         ))
-        .insert(AquaSimCamElement( CameraElement::Camera ))
+        .insert(AquaSimCamElement(CameraElement::Camera))
         .id();
 
     commands.entity(cam_center_parent).add_child(cam_holder);
     commands.entity(cam_holder).add_child(cam);
 }
-
 
 fn move_cam(
     windows: Query<&Window>,
@@ -147,7 +139,7 @@ fn move_cam(
                 if move_pan.length_squared() > 0.0 {
                     let right = Vec3::X * -move_pan.x * 0.25;
                     let up = Vec3::Y * move_pan.y * 0.25;
-                    transform.translation += (right + up) * (CSFACTOR/5.0);
+                    transform.translation += (right + up) * (CSFACTOR / 5.0);
                 }
             }
             CameraElement::OrbitHandle => {
@@ -167,13 +159,14 @@ fn move_cam(
             CameraElement::Camera => {
                 if scroll.abs() > 0.0 {
                     scroll *= CSFACTOR;
-                    transform.translation = (transform.translation + (transform.translation.normalize() * scroll )).clamp_length(CCLOSEST, 1000.0);
+                    transform.translation = (transform.translation
+                        + (transform.translation.normalize() * scroll))
+                        .clamp_length(CCLOSEST, 1000.0);
                 }
             }
         };
     }
 }
-
 
 fn get_primary_window_size(windows: &Window) -> Vec2 {
     let window = windows;

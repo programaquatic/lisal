@@ -15,18 +15,11 @@
 */
 
 use bevy::{
+    math::{Vec3A, prelude::Sphere},
     prelude::*,
-    math:: {
-        Vec3A,
-        prelude::Sphere
-    }
 };
 
-
-use crate::{
-    aqs_utils::extforcevol::ExternalForceVolume,
-    tech::tank::Tank,
-};
+use crate::{aqs_utils::extforcevol::ExternalForceVolume, tech::tank::Tank};
 
 const EFFECTIVE_RADIUS: f32 = 1.0;
 
@@ -44,10 +37,11 @@ pub struct Pump {
 
 impl Pump {
     #[allow(dead_code)]
-    pub fn new(source: Vec3,
-               target: Vec3,
-               target_velocity: Vec3,
-               // radius: f32,
+    pub fn new(
+        source: Vec3,
+        target: Vec3,
+        target_velocity: Vec3,
+        // radius: f32,
     ) -> Self {
         Pump {
             source: Vec3A::from(source),
@@ -58,17 +52,17 @@ impl Pump {
     }
     pub fn from_extforcevolumes(src: &ExternalForceVolume, dst: &ExternalForceVolume) -> Self {
         Pump {
-            source: Vec3A::from( src.location ),
-            target: Vec3A::from( dst.location ),
-            target_velocity: Vec3A::from( dst.get_force_for_position(dst.location) ),
+            source: Vec3A::from(src.location),
+            target: Vec3A::from(dst.location),
+            target_velocity: Vec3A::from(dst.get_force_for_position(dst.location)),
             // radius: f32::min( src.extent.min_element(), dst.extent.min_element() ),  // using squared lengths
         }
     }
 
-    pub fn particle_pump(&self, refpoint: Vec3A) -> Option::<(Vec3A, Vec3A)> {
+    pub fn particle_pump(&self, refpoint: Vec3A) -> Option<(Vec3A, Vec3A)> {
         let (distance, relative) = self.relative_distance(refpoint);
-        if  relative <= EFFECTIVE_RADIUS {
-            Some( (self.target + distance, self.target_velocity) )
+        if relative <= EFFECTIVE_RADIUS {
+            Some((self.target + distance, self.target_velocity))
         } else {
             None
         }
@@ -88,10 +82,7 @@ pub fn initialize(
 ) {
     dbg!("{}", tank_cfg.pump.outlet.clone());
 
-    let pump_efv = Pump::from_extforcevolumes(
-        &tank_cfg.pump.outlet,
-        &tank_cfg.pump.inlet,
-    );
+    let pump_efv = Pump::from_extforcevolumes(&tank_cfg.pump.outlet, &tank_cfg.pump.inlet);
 
     let water_material = materials.add(StandardMaterial {
         base_color: Color::linear_rgba(0.5, 0.5, 0.5, 0.1),
@@ -114,19 +105,19 @@ pub fn initialize(
         // })
         .id();
 
-    let inlet = commands
-        .spawn( tank_cfg.pump.inlet.clone() )
-        .id();
+    let inlet = commands.spawn(tank_cfg.pump.inlet.clone()).id();
     let outlet = commands
-        .spawn( tank_cfg.pump.outlet.clone() )
+        .spawn(tank_cfg.pump.outlet.clone())
         .insert((
             Mesh3d(meshes.add(Sphere::new(1.0).mesh().ico(8).unwrap())),
             MeshMaterial3d(water_material),
-            Transform::from_translation( tank_cfg.pump.outlet.location )
-                .with_scale( tank_cfg.pump.outlet.extent * EFFECTIVE_RADIUS ),
+            Transform::from_translation(tank_cfg.pump.outlet.location)
+                .with_scale(tank_cfg.pump.outlet.extent * EFFECTIVE_RADIUS),
         ))
         .id();
 
-    commands.entity(tank_cfg.get_tank_parent()).add_children(&[pump, inlet, outlet]);
-    println!("pump outlet location: {}", tank_cfg.pump.outlet.location );
+    commands
+        .entity(tank_cfg.get_tank_parent())
+        .add_children(&[pump, inlet, outlet]);
+    println!("pump outlet location: {}", tank_cfg.pump.outlet.location);
 }

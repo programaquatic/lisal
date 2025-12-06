@@ -21,12 +21,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-
 // Parts of this code are based on github.com/robkau who did this for 2D
 //    see: https://github.com/robkau/mlsmpm-particles-rs
 
 use bevy::{
-    prelude::*, math::{Vec3A, Mat3A},
+    math::{Mat3A, Vec3A},
+    prelude::*,
 };
 
 use bevy_rapier3d::prelude::*;
@@ -34,17 +34,13 @@ use rand::Rng;
 
 use crate::{
     aqs_utils::constants::Constants,
-    tech::{
-        tank::Tank,
-        pump::Pump,
-    },
+    tech::{pump::Pump, tank::Tank},
     water::{
-        grid::{GridCellType, GridCellIndex, Grid},
         grid,
-        resources,
-        mlsmpm,
-        surface,
+        grid::{Grid, GridCellIndex, GridCellType},
+        mlsmpm, resources,
         spraybar::SprayBar,
+        surface,
     },
 };
 
@@ -56,10 +52,8 @@ pub struct FluidPlugin;
 // #[derive(Component)]
 // pub struct SurfaceProducer;
 
-
 #[derive(Component)]
 pub struct ColliderExperiment;
-
 
 fn fill_tank(
     constants: Res<Constants>,
@@ -68,11 +62,14 @@ fn fill_tank(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut commands: Commands,
-    mut particle_frame: Query<(Entity, &mut resources::ParticleCount), With<resources::ParticleFrameTag>>,
+    mut particle_frame: Query<
+        (Entity, &mut resources::ParticleCount),
+        With<resources::ParticleFrameTag>,
+    >,
 ) {
-    let visible_particles = usize::min( constants.VISIBLE_PARTICLES, constants.MAX_PARTICLES );
+    let visible_particles = usize::min(constants.VISIBLE_PARTICLES, constants.MAX_PARTICLES);
     let inlet = &tank_cfg.get_pump_definition().inlet;
-    let mut spraybar = SprayBar::new( inlet.location, inlet.extent );
+    let mut spraybar = SprayBar::new(inlet.location, inlet.extent);
 
     let (id, mut count) = particle_frame.single_mut().unwrap();
     if count.0 > constants.MAX_PARTICLES {
@@ -89,7 +86,11 @@ fn fill_tank(
         if count.0 % 1000 == 0 {
             println!("Particles in play: {}", count.0);
         }
-        let red = if count.0 % (constants.MAX_PARTICLES / constants.VISIBLE_PARTICLES) == 0 { 1.0 } else { 0.0 };
+        let red = if count.0 % (constants.MAX_PARTICLES / constants.VISIBLE_PARTICLES) == 0 {
+            1.0
+        } else {
+            0.0
+        };
         let water_material = materials.add(StandardMaterial {
             base_color: Color::linear_rgba(red, 0.03, 1.0, 0.8),
             // alpha_mode: AlphaMode::Blend,
@@ -101,26 +102,33 @@ fn fill_tank(
         let visible;
         let particle = if count.0 % (constants.MAX_PARTICLES / visible_particles) == 0 {
             visible = constants.DEBUG_FLUID_PARTICLES.spec;
-            commands// only make one visible particle
+            commands // only make one visible particle
                 .spawn((
-                    Mesh3d(meshes.add(Sphere::new(particle_radius + (particle_radius * red)).mesh().ico(4).unwrap())),
+                    Mesh3d(
+                        meshes.add(
+                            Sphere::new(particle_radius + (particle_radius * red))
+                                .mesh()
+                                .ico(4)
+                                .unwrap(),
+                        ),
+                    ),
                     MeshMaterial3d(water_material.clone()),
-                    Transform::from_translation( wiggle ),
+                    Transform::from_translation(wiggle),
                 ))
-                    // .insert(ColliderExperiment)
-                    // .insert(RigidBody::KinematicPositionBased)
-                    // .insert(Collider::ball( particle_radius / grid.get_scale() ))
-                    // .insert(Group::GROUP_1)
-                    // .insert(LockedAxes::ROTATION_LOCKED)
-                    // .insert(Velocity {
-                    //     linvel: pump_v,
-                    //     ..default()
-                    // })
-
-
+                // .insert(ColliderExperiment)
+                // .insert(RigidBody::KinematicPositionBased)
+                // .insert(Collider::ball( particle_radius / grid.get_scale() ))
+                // .insert(Group::GROUP_1)
+                // .insert(LockedAxes::ROTATION_LOCKED)
+                // .insert(Velocity {
+                //     linvel: pump_v,
+                //     ..default()
+                // })
                 .insert(resources::FluidParticlePosition(Vec3A::from(wiggle)))
                 .insert(resources::FluidParticleVelocity(Vec3A::from(pump_v)))
-                .insert(resources::FluidQuantityMass( constants.DEFAULT_PARTICLE_MASS ))
+                .insert(resources::FluidQuantityMass(
+                    constants.DEFAULT_PARTICLE_MASS,
+                ))
                 .insert(resources::AffineMomentum(Mat3A::ZERO))
                 .insert(resources::CellMMAccumulation(
                     [resources::CellMMAChange {
@@ -129,27 +137,27 @@ fn fill_tank(
                         momentum: Vec3A::ZERO,
                     }; 27],
                 ))
-                .insert(resources::ParticleTag( count.0 + 100000 ))
+                .insert(resources::ParticleTag(count.0 + 100000))
                 .id()
-        } else { //  otherwise spawn a particle without visibility
+        } else {
+            //  otherwise spawn a particle without visibility
             visible = constants.DEBUG_FLUID_PARTICLES.fill;
             commands
-                .spawn((
-                    Transform::from_translation( wiggle ),
-                    Visibility::default(),
-                ))
+                .spawn((Transform::from_translation(wiggle), Visibility::default()))
                 .insert(resources::FluidParticlePosition(Vec3A::from(wiggle)))
                 .insert(resources::FluidParticleVelocity(Vec3A::from(pump_v)))
-                .insert(resources::FluidQuantityMass( constants.DEFAULT_PARTICLE_MASS ))
+                .insert(resources::FluidQuantityMass(
+                    constants.DEFAULT_PARTICLE_MASS,
+                ))
                 .insert(resources::AffineMomentum(Mat3A::ZERO))
                 .insert(resources::CellMMAccumulation(
                     [resources::CellMMAChange {
                         cell_idx: 0,
                         mass: 0.0,
-                            momentum: Vec3A::ZERO,
+                        momentum: Vec3A::ZERO,
                     }; 27],
                 ))
-                .insert(resources::ParticleTag( count.0 ))
+                .insert(resources::ParticleTag(count.0))
                 .id()
         };
         // insert particle as children
@@ -157,31 +165,33 @@ fn fill_tank(
 
         // visualize every added particle (if configured)
         if visible {
-            commands.entity( particle )
-                .insert(Mesh3d(meshes.add(Sphere::new(particle_radius).mesh().ico(8).unwrap())))
+            commands
+                .entity(particle)
+                .insert(Mesh3d(
+                    meshes.add(Sphere::new(particle_radius).mesh().ico(8).unwrap()),
+                ))
                 .insert(MeshMaterial3d(water_material.clone()));
         }
         count.0 += 1;
     }
 }
 
-
 // derive/create temporary (per iteration) Lagrangian particles with velocities
 fn init_fluid_particle_system(
     grid: Res<Grid>,
     constants: Res<Constants>,
-    cells: Query< (&Transform, &grid::GridCellType, &GridCellIndex)>,
+    cells: Query<(&Transform, &grid::GridCellType, &GridCellIndex)>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut commands: Commands,
 ) {
     let mut rng = rand::rng();
 
-    let mut water_material : [Handle<StandardMaterial>; 4] = Default::default();
+    let mut water_material: [Handle<StandardMaterial>; 4] = Default::default();
 
-    for (c, m) in  water_material.iter_mut().enumerate() {
+    for (c, m) in water_material.iter_mut().enumerate() {
         *m = materials.add(StandardMaterial {
-            base_color: Color::linear_rgba(0.0, 0.0, 1.0/(c as f32), 0.5),
+            base_color: Color::linear_rgba(0.0, 0.0, 1.0 / (c as f32), 0.5),
             // alpha_mode: AlphaMode::Blend,
             ..default()
         });
@@ -200,21 +210,20 @@ fn init_fluid_particle_system(
             Name::new("Particle_Frame"),
             resources::ParticleFrameTag,
             resources::ParticleCount(0),
-            Transform::from_translation( grid.to_world_coord( -Vec3::ONE )),
-                // .with_scale( Vec3::splat( grid.get_scale()) ),
+            Transform::from_translation(grid.to_world_coord(-Vec3::ONE)),
+            // .with_scale( Vec3::splat( grid.get_scale()) ),
             Visibility::default(),
         ))
         .id();
 
-
     let _particle_radius = WPARTICLE_RADIUS / grid.get_scale();
     let fill_height = constants.DEFAULT_FILL_HEIGHT * grid.grid_size().y as f32;
 
-    cells.iter().for_each(
-        | ( position, gct, cidx ) | if *gct == grid::GridCellType::Fluid {
+    cells.iter().for_each(|(position, gct, cidx)| {
+        if *gct == grid::GridCellType::Fluid {
             // grid::GridCellType::Fluid => {
             // println!("Cell_idx: {}", idx);
-            let extra_particle = i32::from( cidx.0 % 20 == 0 );
+            let extra_particle = i32::from(cidx.0 % 20 == 0);
             for _ in 0..1 + extra_particle {
                 let wiggle = position.translation
                     + Vec3::new(
@@ -226,22 +235,21 @@ fn init_fluid_particle_system(
                     continue;
                 }
                 let particle = commands
-                            .spawn((
-                                Transform::from_translation( wiggle ),
-                                Visibility::default(),
-                            ))
+                    .spawn((Transform::from_translation(wiggle), Visibility::default()))
                     .insert(resources::FluidParticlePosition(Vec3A::from(wiggle)))
                     .insert(resources::FluidParticleVelocity(Vec3A::ZERO))
-                    .insert(resources::FluidQuantityMass( constants.DEFAULT_PARTICLE_MASS ))
+                    .insert(resources::FluidQuantityMass(
+                        constants.DEFAULT_PARTICLE_MASS,
+                    ))
                     .insert(resources::AffineMomentum(Mat3A::ZERO))
                     .insert(resources::CellMMAccumulation(
                         [resources::CellMMAChange {
                             cell_idx: 0,
                             mass: 0.0,
-                                    momentum: Vec3A::ZERO,
+                            momentum: Vec3A::ZERO,
                         }; 27],
                     ))
-                    .insert(resources::ParticleTag( particle_id ))
+                    .insert(resources::ParticleTag(particle_id))
                     .id();
 
                 particle_id += 1;
@@ -249,33 +257,37 @@ fn init_fluid_particle_system(
                 // insert particle as children
                 commands.entity(particle_frame).add_child(particle);
                 if constants.DEBUG_FLUID_PARTICLES.base {
-                    commands.entity(particle)
-                    //// Uncomment if you want to see all particles
-                        .insert(Mesh3d(meshes.add(Sphere::new(_particle_radius).mesh().ico(4).unwrap())))
+                    commands
+                        .entity(particle)
+                        //// Uncomment if you want to see all particles
+                        .insert(Mesh3d(
+                            meshes.add(Sphere::new(_particle_radius).mesh().ico(4).unwrap()),
+                        ))
                         .insert(MeshMaterial3d(water_material_hdl.clone()));
                 }
             }
         }
-    );
-    println!("Cells: {}; Particles: {}", grid.cell_count(), particle_id );
+    });
+    println!("Cells: {}; Particles: {}", grid.cell_count(), particle_id);
 }
 
 pub fn grid_to_particle(
     constants: Res<Constants>,
     mut grid: ResMut<Grid>,
     mut particles: Query<
-            (
-                &mut resources::FluidParticlePosition,
-                &mut resources::FluidParticleVelocity,
-                &mut resources::AffineMomentum,
-                &resources::ParticleTag,
-            ), Without<GridCellType>
-            >,
-    cells: Query<(&GridCellIndex,  &resources::FluidParticleVelocity), With<GridCellType>>,
+        (
+            &mut resources::FluidParticlePosition,
+            &mut resources::FluidParticleVelocity,
+            &mut resources::AffineMomentum,
+            &resources::ParticleTag,
+        ),
+        Without<GridCellType>,
+    >,
+    cells: Query<(&GridCellIndex, &resources::FluidParticleVelocity), With<GridCellType>>,
 ) {
     // let mut max_vel: f32 = 0.0;
-    cells.iter().for_each( | (idx, vel) | {
-        grid.get_tmp_velo_mut()[ idx.0 ] = vel.0;
+    cells.iter().for_each(|(idx, vel)| {
+        grid.get_tmp_velo_mut()[idx.0] = vel.0;
     });
 
     particles.par_iter_mut().for_each(
@@ -304,10 +316,13 @@ pub fn grid_to_particle(
                             (cell_pos.z as i32 + gz as i32 - 1) as u32,
                         );
                         let cell_dist = (neighbor.as_vec3a() - location.0) + Vec3A::splat(0.5);
-                        let cell_at_index = grid.index_of_vec( &neighbor );
-                        let weighted_velocity = grid.get_tmp_velo()[ cell_at_index ] * weight;
+                        let cell_at_index = grid.index_of_vec(&neighbor);
+                        let weighted_velocity = grid.get_tmp_velo()[cell_at_index] * weight;
 
-                        b += grid::weighted_velocity_and_cell_dist_to_term(weighted_velocity, cell_dist);
+                        b += grid::weighted_velocity_and_cell_dist_to_term(
+                            weighted_velocity,
+                            cell_dist,
+                        );
                         velocity.0 += weighted_velocity;
                     }
                 }
@@ -322,23 +337,24 @@ pub fn particle_boundary_enforcement(
     constants: Res<Constants>,
     grid: Res<Grid>,
     mut particles: Query<
-            (
-                &mut resources::FluidParticlePosition,
-                &mut resources::FluidParticleVelocity,
-                &mut resources::AffineMomentum,
-            ), Without<GridCellType>
-            >,
+        (
+            &mut resources::FluidParticlePosition,
+            &mut resources::FluidParticleVelocity,
+            &mut resources::AffineMomentum,
+        ),
+        Without<GridCellType>,
+    >,
     pumping: Query<&Pump>,
 ) {
     // predictive boundary velocity cap
     let wall_min: f32 = BOUNDARY_WALL_MARGIN;
-    let wall_max: Vec3A = *grid.wall_vector()
-        - Vec3A::splat(wall_min);
+    let wall_max: Vec3A = *grid.wall_vector() - Vec3A::splat(wall_min);
 
-    particles.par_iter_mut().for_each(
-        | (mut location, mut velocity, mut afmom) | {
-            pumping.iter().for_each(| r | {
-                if let Some( ( new_loc, vel_diff) ) = r.particle_pump(location.0) {
+    particles
+        .par_iter_mut()
+        .for_each(|(mut location, mut velocity, mut afmom)| {
+            pumping.iter().for_each(|r| {
+                if let Some((new_loc, vel_diff)) = r.particle_pump(location.0) {
                     location.0 = new_loc;
                     velocity.0 = vel_diff;
                     afmom.0 = Mat3A::ZERO;
@@ -371,108 +387,118 @@ pub fn particle_boundary_enforcement(
             if position_next.z > wall_max.z {
                 velocity.0.z += wall_max.z - position_next.z;
             }
-        }
-    );
+        });
 }
 
 pub fn _collider_update(
     _constants: Res<Constants>,
     r3d_context: ReadRapierContext,
-    mut particles: Query<( &GlobalTransform, &mut resources::FluidParticlePosition,
-                            &mut resources::FluidParticleVelocity ), With<ColliderExperiment>>
+    mut particles: Query<
+        (
+            &GlobalTransform,
+            &mut resources::FluidParticlePosition,
+            &mut resources::FluidParticleVelocity,
+        ),
+        With<ColliderExperiment>,
+    >,
 ) {
     // println!("Observed Particles: {}", particles.iter().len());
     let ctx = r3d_context.single().unwrap();
-    particles.par_iter_mut().for_each(
-        |(position, mut _part_location, mut velocity)| {
-            let collision_point = ctx.cast_ray_and_get_normal(position.translation(),
-                                                              Vec3::from( velocity.0 ),
-                                                              0.1,
-                                                              true,
-                                                              QueryFilter::only_fixed() );
-            if let Some( (_collision_with, ray_x) ) = collision_point
-            {
-                let projected_v = Vec3A::from( ray_x.normal ) * velocity.0.dot( ray_x.normal.into() );
+    particles
+        .par_iter_mut()
+        .for_each(|(position, mut _part_location, mut velocity)| {
+            let collision_point = ctx.cast_ray_and_get_normal(
+                position.translation(),
+                Vec3::from(velocity.0),
+                0.1,
+                true,
+                QueryFilter::only_fixed(),
+            );
+            if let Some((_collision_with, ray_x)) = collision_point {
+                let projected_v = Vec3A::from(ray_x.normal) * velocity.0.dot(ray_x.normal.into());
                 // part_location.0 += ray_x.normal * _constants.WORLD_DT;
                 velocity.0 -= projected_v;
             }
-        }
-    );
+        });
 }
 
 pub fn particle_world_update(
     mut particles: Query<(&resources::FluidParticlePosition, &mut Transform)>,
 ) {
-    particles.par_iter_mut().for_each( |(location, mut transform)| {
-        transform.translation = location.0.into();
-    });
+    particles
+        .par_iter_mut()
+        .for_each(|(location, mut transform)| {
+            transform.translation = location.0.into();
+        });
 }
 
 impl Plugin for FluidPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_plugins(MaterialPlugin::<surface::CustomMaterial>::default())
+        app.add_plugins(MaterialPlugin::<surface::CustomMaterial>::default())
             .add_systems(PreStartup, grid::setup_fluid_grid)
             .add_systems(Startup, surface::init_water_surface_system)
             .add_systems(Startup, grid::grid_initialize_external_forces)
             .add_systems(Startup, init_fluid_particle_system)
-            .add_systems(Startup,
-                grid::grid_collider_setup
-                    .before(grid::show_grid_cells)
+            .add_systems(
+                Startup,
+                grid::grid_collider_setup.before(grid::show_grid_cells),
             )
-            .add_systems(Startup,
-                grid::show_grid_cells
+            .add_systems(Startup, grid::show_grid_cells)
+            .add_systems(
+                FixedUpdate,
+                grid::reset_fluid_grid_cells.before(mlsmpm::p2g_stage1),
             )
-
-            .add_systems(FixedUpdate,
-                grid::reset_fluid_grid_cells
-                    .before(mlsmpm::p2g_stage1))
-            .add_systems(FixedUpdate,
-                mlsmpm::p2g_stage1
-                    .before(mlsmpm::p2g_apply_stage1))
-            .add_systems(FixedUpdate,
-                mlsmpm::p2g_apply_stage1
-                    .before(mlsmpm::p2g_stage2))
-            .add_systems(FixedUpdate,
-                mlsmpm::p2g_stage2
-                    .before(mlsmpm::grid_update))
-            .add_systems(FixedUpdate,
-                mlsmpm::p2g_stage2_solids
-                         .before(grid::wall_to_active_momentum))
-            .add_systems(FixedUpdate,
-                         grid::wall_to_active_momentum
-                            .before(mlsmpm::grid_update))
-            .add_systems(FixedUpdate,
-                mlsmpm::grid_update
-                    .before(grid::update_grid_cells))
-            .add_systems(FixedUpdate,
-                grid::update_grid_cells
-                    .before(grid_to_particle))
-            .add_systems(FixedUpdate,
-                surface::update_surface
-                    .after(grid::update_grid_cells))
+            .add_systems(
+                FixedUpdate,
+                mlsmpm::p2g_stage1.before(mlsmpm::p2g_apply_stage1),
+            )
+            .add_systems(
+                FixedUpdate,
+                mlsmpm::p2g_apply_stage1.before(mlsmpm::p2g_stage2),
+            )
+            .add_systems(FixedUpdate, mlsmpm::p2g_stage2.before(mlsmpm::grid_update))
+            .add_systems(
+                FixedUpdate,
+                mlsmpm::p2g_stage2_solids.before(grid::wall_to_active_momentum),
+            )
+            .add_systems(
+                FixedUpdate,
+                grid::wall_to_active_momentum.before(mlsmpm::grid_update),
+            )
+            .add_systems(
+                FixedUpdate,
+                mlsmpm::grid_update.before(grid::update_grid_cells),
+            )
+            .add_systems(
+                FixedUpdate,
+                grid::update_grid_cells.before(grid_to_particle),
+            )
+            .add_systems(
+                FixedUpdate,
+                surface::update_surface.after(grid::update_grid_cells),
+            )
             // .add_systems(Update,
             //     grid::external_forces_grid_cells
             //         .label("grid_ext_forces")
             //         .before("g2p"))
-            .add_systems(FixedUpdate,
-                grid_to_particle
-                    .before(particle_boundary_enforcement))
-            .add_systems(FixedUpdate,
-                particle_boundary_enforcement
-                .before(particle_world_update))
+            .add_systems(
+                FixedUpdate,
+                grid_to_particle.before(particle_boundary_enforcement),
+            )
+            .add_systems(
+                FixedUpdate,
+                particle_boundary_enforcement.before(particle_world_update),
+            )
             // .add_systems(Update,
             //     _collider_update
             //         .label("collider_update")
             //         .after("g2p")
             //         .before("particle_world_update"))
-            .add_systems(FixedUpdate,
-                grid::debug_grid_cells
-                    .after(grid::update_grid_cells))
-            .add_systems(FixedUpdate,
-                particle_world_update
+            .add_systems(
+                FixedUpdate,
+                grid::debug_grid_cells.after(grid::update_grid_cells),
             )
-            .add_systems(Update,fill_tank)
-            ;
+            .add_systems(FixedUpdate, particle_world_update)
+            .add_systems(Update, fill_tank);
     }
 }

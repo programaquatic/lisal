@@ -16,7 +16,7 @@
 name = "lisal"
 version = "0.1.0"
 authors = ["programaquatic"]
-edition = "2021"
+edition = "2024"
 
 
 # Enable only a small amount of optimization in debug mode

@@ -14,16 +14,10 @@
    limitations under the License.
 */
 
-use bevy::{
-    prelude::*,
-    math::Mat3A,
-};
-use serde::{Serialize, Deserialize};
+use bevy::{math::Mat3A, prelude::*};
+use serde::{Deserialize, Serialize};
 
-use crate::aqs_utils::{
-    config as cfg,
-};
-
+use crate::aqs_utils::config as cfg;
 
 // fluid constitutive model properties
 #[derive(Resource, Serialize, Deserialize, Debug, Default)]
@@ -41,8 +35,6 @@ pub struct NeoHookeanHyperElasticModel {
     pub elastic_mu: f32,
 }
 
-
-
 #[derive(Resource, Serialize, Deserialize, Debug)]
 pub struct ParticleVisibilityConf {
     pub base: bool,
@@ -59,7 +51,6 @@ impl Default for ParticleVisibilityConf {
         }
     }
 }
-
 
 #[allow(non_snake_case)] // allow those constants to be uppercase var names
 #[derive(Resource, Serialize, Deserialize, Debug)]
@@ -89,8 +80,9 @@ pub struct Constants {
 }
 
 impl FromWorld for Constants {
-    fn from_world( _world: &mut World ) -> Self {
-        let mut aqs_constants: Constants = cfg::read_json::<Constants>(String::from("assets/constants.json")).unwrap();
+    fn from_world(_world: &mut World) -> Self {
+        let mut aqs_constants: Constants =
+            cfg::read_json::<Constants>(String::from("assets/constants.json")).unwrap();
 
         let fluid_model = FluidModel {
             rest_density: aqs_constants.DEFAULT_DENSITY.y,

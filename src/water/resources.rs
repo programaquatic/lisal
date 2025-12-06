@@ -15,7 +15,8 @@
 */
 
 use bevy::{
-    prelude::*, math::{Vec3A, Mat3A},
+    math::{Mat3A, Vec3A},
+    prelude::*,
 };
 
 #[derive(Component)]
@@ -35,7 +36,6 @@ pub struct FluidParticleVelocity(pub Vec3A);
 
 #[derive(Component, Debug)]
 pub struct FluidQuantityMass(pub f32);
-
 
 // computed changes to-be-applied to grid on next steps
 #[derive(Clone, Copy)]

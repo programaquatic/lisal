@@ -15,18 +15,14 @@
 */
 
 use bevy::prelude::*;
-use serde::{Serialize, Deserialize};
-use std::fmt;
 use bevy_rapier3d::prelude::*;
+use serde::{Deserialize, Serialize};
+use std::fmt;
 
 use crate::{
-    aqs_utils::{
-        constants::Constants,
-        config,
-        extforcevol::ExternalForceVolume,
-    },
-    tech::pump,
+    aqs_utils::{config, constants::Constants, extforcevol::ExternalForceVolume},
     decoration::types::DecorationTag,
+    tech::pump,
 };
 // use crate::water::surface as sf;
 
@@ -49,7 +45,11 @@ struct HoleAndLocation {
 
 impl fmt::Display for HoleAndLocation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}( {}, {} )/{}", self.position, self.x, self.y, self.diameter)
+        write!(
+            f,
+            "{:?}( {}, {} )/{}",
+            self.position, self.x, self.y, self.diameter
+        )
     }
 }
 
@@ -85,33 +85,39 @@ pub struct Tank {
     pub pump: PumpDefinition,
 }
 
-
 impl fmt::Display for Tank {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Size    : {} x {} x {}; {}", self.tank.width, self.tank.depth, self.tank.height, self.tank.glass)?;
+        write!(
+            f,
+            "Size    : {} x {} x {}; {}",
+            self.tank.width, self.tank.depth, self.tank.height, self.tank.glass
+        )?;
         write!(f, "Overflow: shaft: {:?}", self.overflow.shaft)?;
         write!(f, "Overflow: drill: {:?}", self.overflow.drill)
     }
 }
 
 impl FromWorld for Tank {
-    fn from_world( _world: &mut World ) -> Self {
-        let mut tank_cfg: Tank = config::read_json::<Tank>(String::from("assets/tank.json")).unwrap();
+    fn from_world(_world: &mut World) -> Self {
+        let mut tank_cfg: Tank =
+            config::read_json::<Tank>(String::from("assets/tank.json")).unwrap();
         println!("{:?}", tank_cfg);
-        let aqs_constants: Constants = config::read_json::<Constants>(String::from("assets/constants.json")).unwrap();
+        let aqs_constants: Constants =
+            config::read_json::<Constants>(String::from("assets/constants.json")).unwrap();
 
         tank_cfg.pump.outlet.name = Some("OUT".to_string());
         // adjust tank config for config parameters
-        tank_cfg.update( aqs_constants.MAX_GRID_CELLS );
+        tank_cfg.update(aqs_constants.MAX_GRID_CELLS);
 
         // this is the meshless parent entity for the tank to allow for a global offset,
         // it's a SpatialBundle to assure Transform- and Visibility Propagation
         // which require Visibility, ComputedVisibility, Transform and GlobalTransform to be set up
-        let ptank = _world.spawn((
-            // transform: Transform::from_translation(-tank_cfg.get_center()),
-            Transform::from_translation(Vec3::ZERO),
-            Visibility::default(),
-        ))
+        let ptank = _world
+            .spawn((
+                // transform: Transform::from_translation(-tank_cfg.get_center()),
+                Transform::from_translation(Vec3::ZERO),
+                Visibility::default(),
+            ))
             .insert(Name::new("Core-Tank-box"))
             .insert(ParentTankTag)
             .id();
@@ -123,9 +129,7 @@ impl FromWorld for Tank {
 
 impl Tank {
     pub fn get_size(&self) -> Vec3 {
-        Vec3::new(self.tank.width,
-                  self.tank.height,
-                  self.tank.depth)
+        Vec3::new(self.tank.width, self.tank.height, self.tank.depth)
     }
     pub fn get_center(&self) -> Vec3 {
         self.get_size() / 2.0
@@ -142,17 +146,17 @@ impl Tank {
 
     pub fn update(&mut self, grid_cells: usize) -> f32 {
         let cell_count = self.tank.width * self.tank.depth * self.tank.height;
-        let cell_scale_factor = f32::powf( grid_cells as f32 / cell_count, 1./3. );
+        let cell_scale_factor = f32::powf(grid_cells as f32 / cell_count, 1. / 3.);
         self.scale = cell_scale_factor;
-        println!("Tank-to-Grid Scale: {}", cell_scale_factor );
+        println!("Tank-to-Grid Scale: {}", cell_scale_factor);
 
         self.tank.width *= cell_scale_factor;
         self.tank.depth *= cell_scale_factor;
         self.tank.height *= cell_scale_factor;
         self.tank.glass *= cell_scale_factor;
 
-        self.pump.inlet.scale( cell_scale_factor );
-        self.pump.outlet.scale( cell_scale_factor );
+        self.pump.inlet.scale(cell_scale_factor);
+        self.pump.outlet.scale(cell_scale_factor);
 
         for s in self.overflow.shaft.iter_mut() {
             s.x *= cell_scale_factor;
@@ -169,16 +173,14 @@ impl Tank {
     }
 }
 
-
 pub struct TankPlugin;
 
 impl Plugin for TankPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .init_resource::<Constants>()
+        app.init_resource::<Constants>()
             .init_resource::<Tank>()
-            .add_systems( PreStartup, initialize)
-            .add_systems( PreStartup, pump::initialize );
+            .add_systems(PreStartup, initialize)
+            .add_systems(PreStartup, pump::initialize);
     }
 }
 
@@ -203,7 +205,7 @@ impl Default for GlassPaneDefinition {
             mat_hdl: Handle::<StandardMaterial>::default(),
             position: Vec3::ZERO,
             scale: Vec3::ONE,
-            rotation: Quat::from_axis_angle( Vec3::Y, 0.0 ),
+            rotation: Quat::from_axis_angle(Vec3::Y, 0.0),
             is_decoration: false,
         }
     }
@@ -242,29 +244,59 @@ fn initialize(
 
     // temp extra plane as artificial bottom (for now)
     commands.spawn((
-        Mesh3d(meshes.add(Plane3d::default().mesh().size( 200.0, 200.0 ))),
-                   MeshMaterial3d(materials.add(StandardMaterial {
-                       base_color: Color::linear_rgb(0.3, 0.3, 0.3),
-                       alpha_mode: AlphaMode::Opaque,
-                       ..default()
-                   })),
-        Transform::from_xyz( 0.0, -dim_center[1]-glass_thick, 0.0))
-    );
+        Mesh3d(meshes.add(Plane3d::default().mesh().size(200.0, 200.0))),
+        MeshMaterial3d(materials.add(StandardMaterial {
+            base_color: Color::linear_rgb(0.3, 0.3, 0.3),
+            alpha_mode: AlphaMode::Opaque,
+            ..default()
+        })),
+        Transform::from_xyz(0.0, -dim_center[1] - glass_thick, 0.0),
+    ));
 
     // pre-define the glas panes as mesh and handles for re-use in Rapier colliders
     // pre-define side panes
-    let side_pane_mesh = Mesh::from(Cuboid::from_corners(Vec3{x:glass_thick, y:dim[1] + glass_thick, z:dim[2]},
-                                                         Vec3{x:0.0, y:0.0,  z:0.0}));
+    let side_pane_mesh = Mesh::from(Cuboid::from_corners(
+        Vec3 {
+            x: glass_thick,
+            y: dim[1] + glass_thick,
+            z: dim[2],
+        },
+        Vec3 {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        },
+    ));
     let side_pane = meshes.add(side_pane_mesh);
 
     // pre-define front/back panes
-    let front_pane_mesh = Mesh::from(Cuboid::from_corners(Vec3{ x: dim[0]+2.0*glass_thick,y: dim[1]+glass_thick, z: glass_thick},
-                                                          Vec3{ x: 0.0, y: 0.0, z: 0.0 }));
+    let front_pane_mesh = Mesh::from(Cuboid::from_corners(
+        Vec3 {
+            x: dim[0] + 2.0 * glass_thick,
+            y: dim[1] + glass_thick,
+            z: glass_thick,
+        },
+        Vec3 {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        },
+    ));
     let front_pane = meshes.add(front_pane_mesh);
 
     // pre-define bottom pane
-    let bottom_pane_mesh = Mesh::from(Cuboid::from_corners(Vec3{ x: dim[0], y: glass_thick, z: dim[2]},
-                                                           Vec3{ x: 0.0, y: 0.0, z: 0.0 }));
+    let bottom_pane_mesh = Mesh::from(Cuboid::from_corners(
+        Vec3 {
+            x: dim[0],
+            y: glass_thick,
+            z: dim[2],
+        },
+        Vec3 {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        },
+    ));
     let bottom_pane = meshes.add(bottom_pane_mesh);
 
     let ptank = tank_cfg.get_tank_parent();
@@ -274,35 +306,43 @@ fn initialize(
     let mut glass_panes = vec![
         GlassPaneDefinition {
             name: Name::new("Right Side Glass"),
-            position: Vec3::new( dim[0]+glass_thick*0.5, dim[1]*0.5-glass_thick, dim[2]*0.5 ),
+            position: Vec3::new(
+                dim[0] + glass_thick * 0.5,
+                dim[1] * 0.5 - glass_thick,
+                dim[2] * 0.5,
+            ),
             mesh_hdl: side_pane.clone(),
             mat_hdl: glass_material_hdl.clone(),
             ..default()
         },
         GlassPaneDefinition {
             name: Name::new("Left Side Glass"),
-            position: Vec3::new( -glass_thick*0.5, dim[1]*0.5-glass_thick, dim[2]*0.5 ),
+            position: Vec3::new(-glass_thick * 0.5, dim[1] * 0.5 - glass_thick, dim[2] * 0.5),
             mesh_hdl: side_pane,
             mat_hdl: glass_material_hdl.clone(),
             ..default()
         },
         GlassPaneDefinition {
             name: Name::new("Back Side Glass"),
-            position: Vec3::new( dim[0]*0.5, dim[1]*0.5-glass_thick, -glass_thick*0.5 ),
+            position: Vec3::new(dim[0] * 0.5, dim[1] * 0.5 - glass_thick, -glass_thick * 0.5),
             mesh_hdl: front_pane.clone(),
             mat_hdl: glass_material_hdl.clone(),
             ..default()
         },
         GlassPaneDefinition {
             name: Name::new("Front Side Glass"),
-            position: Vec3::new( dim[0]*0.5, dim[1]*0.5-glass_thick, dim[2]+glass_thick*0.5 ),
+            position: Vec3::new(
+                dim[0] * 0.5,
+                dim[1] * 0.5 - glass_thick,
+                dim[2] + glass_thick * 0.5,
+            ),
             mesh_hdl: front_pane,
             mat_hdl: glass_material_hdl.clone(),
             ..default()
         },
         GlassPaneDefinition {
             name: Name::new("Bottom Glass"),
-            position: Vec3::new( dim[0]*0.5, -glass_thick, dim[2]*0.5 ),
+            position: Vec3::new(dim[0] * 0.5, -glass_thick, dim[2] * 0.5),
             mesh_hdl: bottom_pane,
             mat_hdl: glass_material_hdl,
             ..default()
@@ -318,35 +358,50 @@ fn initialize(
             Vec3 {
                 x: 0.0,
                 y: 0.0,
-                z: 0.0},
+                z: 0.0,
+            },
             Vec3 {
                 x: 1.0,
-                y: dim[1]-(9.0*tank_cfg.scale),
-                z: glass_thick}
+                y: dim[1] - (9.0 * tank_cfg.scale),
+                z: glass_thick,
+            },
         ));
 
-        let spane_base = meshes.add( spane_base_mesh );
+        let spane_base = meshes.add(spane_base_mesh);
 
         // zip the shaft-path definitions such that we get a tuple of (i+1, i), i.e. the endpoint and the current point
-        for (i, (b, a)) in tank_cfg.overflow.shaft.iter().skip(1).zip( tank_cfg.overflow.shaft.iter().take( path_len ) ).enumerate() {
-            let (xd, zd) = ( b.x - a.x, b.y - a.y );
+        for (i, (b, a)) in tank_cfg
+            .overflow
+            .shaft
+            .iter()
+            .skip(1)
+            .zip(tank_cfg.overflow.shaft.iter().take(path_len))
+            .enumerate()
+        {
+            let (xd, zd) = (b.x - a.x, b.y - a.y);
 
-            let plen = f32::sqrt( xd*xd + zd*zd );
-            let rpos = Vec3{ x: 0.0,
-                             y: (dim[1]-(9.0*tank_cfg.scale)-glass_thick)*0.5,
-                             z: 0.0 };
+            let plen = f32::sqrt(xd * xd + zd * zd);
+            let rpos = Vec3 {
+                x: 0.0,
+                y: (dim[1] - (9.0 * tank_cfg.scale) - glass_thick) * 0.5,
+                z: 0.0,
+            };
 
-            let xangle = get_angle( xd, zd);
+            let xangle = get_angle(xd, zd);
             println!("{},{}", plen, xangle);
-            glass_panes.push( GlassPaneDefinition {
+            glass_panes.push(GlassPaneDefinition {
                 name: Name::new(i.to_string() + "Shaft-Pane"),
                 mesh_hdl: spane_base.clone(),
                 mat_hdl: black_glass_material_hdl.clone(),
-                position: Vec3::new( rpos.x+(a.x+b.x)*0.5, rpos.y, rpos.z+(a.y+b.y)*0.5 ),
-                scale: Vec3::from( (plen, 1.0, 1.0) ),
-                rotation: Quat::from_axis_angle( Vec3::from ( (0.0, -1.0, 0.0) ), xangle),
+                position: Vec3::new(
+                    rpos.x + (a.x + b.x) * 0.5,
+                    rpos.y,
+                    rpos.z + (a.y + b.y) * 0.5,
+                ),
+                scale: Vec3::from((plen, 1.0, 1.0)),
+                rotation: Quat::from_axis_angle(Vec3::from((0.0, -1.0, 0.0)), xangle),
                 is_decoration: true,
-            } );
+            });
         }
     }
 
@@ -357,12 +412,16 @@ fn initialize(
     // Insert the accumulated list of glass panes
     let mut panes_list = Vec::<Entity>::with_capacity(glass_panes.len());
     for glass in glass_panes.into_iter() {
-        let glass_mesh = meshes.get( &glass.mesh_hdl ).unwrap();
+        let glass_mesh = meshes.get(&glass.mesh_hdl).unwrap();
         let collider = {
-            let mut tc = Collider::from_bevy_mesh( glass_mesh, &ComputedColliderShape::TriMesh(TriMeshFlags::all()) ).unwrap();
+            let mut tc = Collider::from_bevy_mesh(
+                glass_mesh,
+                &ComputedColliderShape::TriMesh(TriMeshFlags::all()),
+            )
+            .unwrap();
             // This scale+promote_shape is necessary because bevy_rapier appears to not correctly scale the
             // parts of the collider that are used when calculating intersections
-            tc.set_scale( glass.scale, 2);
+            tc.set_scale(glass.scale, 2);
             tc.promote_scaled_shape();
             tc
         };
@@ -371,35 +430,32 @@ fn initialize(
             .spawn((
                 Mesh3d(glass.mesh_hdl.clone()),
                 MeshMaterial3d(glass.mat_hdl.clone()),
-                Transform::from_translation( glass.position )
-                    .with_scale( glass.scale )
-                    .with_rotation( glass.rotation ),
-                glass.name.clone()
+                Transform::from_translation(glass.position)
+                    .with_scale(glass.scale)
+                    .with_rotation(glass.rotation),
+                glass.name.clone(),
             ))
             .id();
         if glass.is_decoration {
             commands
                 .entity(pane)
-                .insert( RigidBody::Fixed )
-                .insert( collider )
-                .insert( ColliderScale::Absolute( Vec3::ONE ) )
-                .insert( DecorationTag );
+                .insert(RigidBody::Fixed)
+                .insert(collider)
+                .insert(ColliderScale::Absolute(Vec3::ONE))
+                .insert(DecorationTag);
         }
-        panes_list.push( pane );
-        println!("Glass: {} -> id{}", glass.name, pane.index() );
+        panes_list.push(pane);
+        println!("Glass: {} -> id{}", glass.name, pane.index());
     }
     commands.entity(ptank).add_children(&panes_list);
 }
 
-fn get_angle( xd: f32, yd: f32 ) -> f32 {
+fn get_angle(xd: f32, yd: f32) -> f32 {
     yd.atan2(xd)
 }
 
-
-
 #[cfg(test)]
-mod test
-{
+mod test {
     use super::*;
     use crate::aqs_utils::extforcevol::ForceVolumeDirection;
 
@@ -414,24 +470,26 @@ mod test
             },
             overflow: OverFlowData {
                 drill: vec![],
-                shaft: vec![ Vec2::new( 40., 0.), Vec2::new( 40., 15.), Vec2::new( 0., 15.) ],
+                shaft: vec![Vec2::new(40., 0.), Vec2::new(40., 15.), Vec2::new(0., 15.)],
             },
             scale: 1.0,
             tank_id: None,
             pump: PumpDefinition {
-                inlet: ExternalForceVolume::new( Vec3::new(10.,60.,25.),
-                                                 Vec3::new(2.,2.,10.),
-                                                 ForceVolumeDirection::from_parallel(
-                                                     Vec3::new(20.,1.0,0.0)),
-                                                 Some("IN".to_string())),
-                outlet: ExternalForceVolume::new( Vec3::new(10.,10.,25.),
-                                                  Vec3::new(2.,2.,10.),
-                                                  ForceVolumeDirection::from_parallel(
-                                                    Vec3::new(20.,1.0,0.0)),
-                                                  Some("OUT".to_string())),
+                inlet: ExternalForceVolume::new(
+                    Vec3::new(10., 60., 25.),
+                    Vec3::new(2., 2., 10.),
+                    ForceVolumeDirection::from_parallel(Vec3::new(20., 1.0, 0.0)),
+                    Some("IN".to_string()),
+                ),
+                outlet: ExternalForceVolume::new(
+                    Vec3::new(10., 10., 25.),
+                    Vec3::new(2., 2., 10.),
+                    ForceVolumeDirection::from_parallel(Vec3::new(20., 1.0, 0.0)),
+                    Some("OUT".to_string()),
+                ),
             },
         };
         let ostr = serde_json::to_string_pretty(&tank).unwrap();
-        println!("{}",ostr);
+        println!("{}", ostr);
     }
 }
